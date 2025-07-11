@@ -30,7 +30,7 @@ MCP Code Extractor solves these problems by providing structured, tree-sitter-po
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Clone this repository
-git clone https://github.com/yourusername/mcp-code-extractor
+git clone https://github.com/ctoth/mcp-code-extractor
 cd mcp-code-extractor
 
 # Run directly with UV (no installation needed!)
@@ -75,8 +75,6 @@ Or with traditional Python:
 
 ### 1. `get_symbols` - Discover Code Structure
 List all functions, classes, and other symbols in a file.
-
-**Use this first** when exploring a new codebase!
 
 ```
 Returns:

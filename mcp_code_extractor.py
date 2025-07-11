@@ -130,10 +130,10 @@ def get_language_for_file(file_path: str) -> str:
 @mcp.tool()
 def get_function(file_path: str, function_name: str) -> dict:
     """
-    Extract a complete function definition from a file using tree-sitter parsing.
+    Extract a complete function definition - USE THIS INSTEAD OF Read() for specific functions!
     
-    Use this when you need the full implementation of a specific function. Supports 30+ languages
-    with automatic language detection and precise boundary detection.
+    🎯 **PRECISE EXTRACTION** - Gets exact function boundaries with line numbers using tree-sitter.
+    ⚠️ **REPLACES Read() + manual parsing** - No need to read entire files and search manually.
     
     Args:
         file_path: Path to the source file
@@ -142,7 +142,7 @@ def get_function(file_path: str, function_name: str) -> dict:
     Returns:
         dict with code, start_line, end_line, lines, function, file, language
         
-    Preferred over reading entire files when you need specific function code with accurate boundaries.
+    **WORKFLOW**: get_symbols() first → get_function() for specific extraction → Edit
     """
 
     if not os.path.exists(file_path):
@@ -246,10 +246,10 @@ def get_function(file_path: str, function_name: str) -> dict:
 @mcp.tool()
 def get_class(file_path: str, class_name: str) -> dict:
     """
-    Extract a complete class definition from a file using tree-sitter parsing.
+    Extract a complete class definition - USE THIS INSTEAD OF Read() for specific classes!
     
-    Use this when you need the full class structure including all methods and properties.
-    Supports OOP languages with automatic language detection and precise boundary detection.
+    🎯 **PRECISE EXTRACTION** - Gets exact class boundaries with all methods using tree-sitter.
+    ⚠️ **REPLACES Read() + manual parsing** - No need to read entire files and search manually.
     
     Args:
         file_path: Path to the source file
@@ -258,7 +258,7 @@ def get_class(file_path: str, class_name: str) -> dict:
     Returns:
         dict with code, start_line, end_line, lines, class, file, language
         
-    Preferred over reading entire files when you need specific class code with accurate boundaries.
+    **WORKFLOW**: get_symbols() first → get_class() for specific extraction → Edit
     """
 
     if not os.path.exists(file_path):
@@ -353,10 +353,12 @@ def get_class(file_path: str, class_name: str) -> dict:
 @mcp.tool()
 def get_symbols(file_path: str) -> list:
     """
-    List all functions, classes, and other symbols in a file with their line numbers.
+    🚨 **ALWAYS USE THIS FIRST** for code investigation - DO NOT use Read() on code files!
     
-    Use this FIRST when exploring any code file to get a structured overview before extracting 
-    specific functions or classes. Shows what's available without reading the entire file.
+    List all functions, classes, and other symbols in a file with their line numbers.
+    This is the CORRECT way to explore code structure instead of reading entire files.
+    
+    ⚠️ **REPLACES Read() for code files** - More efficient and structured than reading entire files.
     
     Args:
         file_path: Path to the source file to analyze
@@ -364,8 +366,7 @@ def get_symbols(file_path: str) -> list:
     Returns:
         List of symbols with name, type, start_line, end_line, lines, and preview
         
-    Essential for code exploration - provides clean overview of file structure with precise 
-    line numbers for targeted extraction.
+    **WORKFLOW**: get_symbols() → get_function()/get_class() → Edit (NOT Read → Search → Edit)
     """
 
     if not os.path.exists(file_path):
