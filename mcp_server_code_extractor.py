@@ -17,29 +17,16 @@ No more grep/sed/awk gymnastics - just clean, precise extraction.
 
 **STOP USING READ/SEARCH/GREP FOR CODE INVESTIGATION!**
 
-❌ **WRONG WORKFLOW** (what you used to do):
-   Read(file) → Search(pattern) → Read(file) → Search(another pattern) → Edit
+❌ **WRONG**: Read(file) → Search(pattern) → Edit
+✅ **CORRECT**: get_symbols(file) → get_function(file, name) → Edit
 
-✅ **CORRECT WORKFLOW** (what you should do):
-   get_symbols(file) → get_function(file, name) → Edit
-   get_symbols(file) → get_lines(file, start, end) → Edit
-   get_symbols(file) → get_class(file, name) → Edit
-
-**MANDATORY INVESTIGATION STEPS**:
+**MANDATORY STEPS**:
 1. ALWAYS start with get_symbols(file) to see what's in the file
 2. Use get_function(file, name) to extract specific functions
-3. Use get_lines(file, start, end) for targeted line ranges
-4. Use get_class(file, name) for class definitions
-5. NEVER use Read() to "examine" or "investigate" code files
-6. NEVER use Search() with function/class name patterns
-7. NEVER use Bash() with grep/tail/head commands
+3. Use get_class(file, name) for class definitions
+4. NEVER use Read() to "examine" or "investigate" code files
 
-**🚫 USING Read() ON CODE FILES IS PROHIBITED:**
-- You will waste context reading entire files
-- You will miss function boundaries and structure
-- You will need to manually parse what tree-sitter does automatically
-- You will make mistakes finding the right code sections
-- These tools are specifically designed to replace Read() for code
+**🚫 Using Read() on code files wastes context and misses structure**
 
 **COMMON SCENARIOS**:
 - Testing: get_symbols(test_file) → get_function(test_file, "test_method_name")
@@ -141,7 +128,6 @@ def get_function(file_path: str, function_name: str) -> dict:
     
     🎯 **PRECISE EXTRACTION** - Gets exact function boundaries with line numbers using tree-sitter.
     ⚠️ **REPLACES Read() + manual parsing** - No need to read entire files and search manually.
-    🚫 **NEVER use Read() then search for functions** - This tool does it correctly in one step.
     
     Args:
         file_path: Path to the source file
@@ -150,8 +136,7 @@ def get_function(file_path: str, function_name: str) -> dict:
     Returns:
         dict with code, start_line, end_line, lines, function, file, language
         
-    **MANDATORY WORKFLOW**: get_symbols() first → get_function() for specific extraction → Edit
-    **FORBIDDEN**: Read() → Search/Grep for function names → Edit (WRONG!)
+    **WORKFLOW**: get_symbols() first → get_function() for specific extraction → Edit
     """
 
     if not os.path.exists(file_path):
@@ -259,7 +244,6 @@ def get_class(file_path: str, class_name: str) -> dict:
     
     🎯 **PRECISE EXTRACTION** - Gets exact class boundaries with all methods using tree-sitter.
     ⚠️ **REPLACES Read() + manual parsing** - No need to read entire files and search manually.
-    🚫 **NEVER use Read() then search for classes** - This tool does it correctly in one step.
     
     Args:
         file_path: Path to the source file
@@ -268,8 +252,7 @@ def get_class(file_path: str, class_name: str) -> dict:
     Returns:
         dict with code, start_line, end_line, lines, class, file, language
         
-    **MANDATORY WORKFLOW**: get_symbols() first → get_class() for specific extraction → Edit
-    **FORBIDDEN**: Read() → Search/Grep for class names → Edit (WRONG!)
+    **WORKFLOW**: get_symbols() first → get_class() for specific extraction → Edit
     """
 
     if not os.path.exists(file_path):
@@ -364,13 +347,12 @@ def get_class(file_path: str, class_name: str) -> dict:
 @mcp.tool()
 def get_symbols(file_path: str) -> list:
     """
-    🚨 **MANDATORY FIRST STEP** for ALL code investigation - NEVER use Read() on code files!
+    🚨 **ALWAYS USE THIS FIRST** for code investigation - DO NOT use Read() on code files!
     
     List all functions, classes, and other symbols in a file with their line numbers.
-    This is the ONLY CORRECT way to explore code structure instead of reading entire files.
+    This is the CORRECT way to explore code structure instead of reading entire files.
     
-    ⚠️ **COMPLETELY REPLACES Read() for code files** - More efficient and structured than reading entire files.
-    🚫 **USING Read() ON CODE FILES IS WRONG** - You will miss functions and waste context.
+    ⚠️ **REPLACES Read() for code files** - More efficient and structured than reading entire files.
     
     Args:
         file_path: Path to the source file to analyze
@@ -378,8 +360,7 @@ def get_symbols(file_path: str) -> list:
     Returns:
         List of symbols with name, type, start_line, end_line, lines, and preview
         
-    **MANDATORY WORKFLOW**: get_symbols() → get_function()/get_class() → Edit
-    **FORBIDDEN WORKFLOW**: Read → Search → Edit (THIS IS WRONG!)
+    **WORKFLOW**: get_symbols() → get_function()/get_class() → Edit (NOT Read → Search → Edit)
     """
 
     if not os.path.exists(file_path):
@@ -545,7 +526,6 @@ def get_lines(file_path: str, start_line: int, end_line: int) -> dict:
         dict with code, start_line, end_line, lines, file, total_lines
         
     **WORKFLOW**: get_symbols() first → get_lines() for specific ranges → Edit
-    More efficient than reading entire files when you need specific line ranges with validation.
     """
 
     if not os.path.exists(file_path):
@@ -594,7 +574,6 @@ def get_signature(file_path: str, function_name: str) -> dict:
         dict with signature, name, file, start_line, lines
         
     **WORKFLOW**: get_symbols() first → get_signature() for interface info → Edit
-    More efficient than get_function when you only need the function interface, not implementation.
     """
 
     result = get_function(file_path, function_name)
@@ -621,7 +600,8 @@ def get_signature(file_path: str, function_name: str) -> dict:
     }
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the MCP server."""
     import sys
 
     # If run with --help, show usage
@@ -653,3 +633,7 @@ For more info: https://github.com/yourusername/mcp-extract
 
     # Otherwise run as MCP server
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()

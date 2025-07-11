@@ -1,6 +1,6 @@
 [project]
 name = "mcp-server-code-extractor"
-version = "0.1.0"
+version = "0.1.1"
 description = "A Model Context Protocol (MCP) server that provides precise code extraction tools using tree-sitter parsing"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -36,7 +36,7 @@ Issues = "https://github.com/ctoth/mcp_server_code_extractor/issues"
 Documentation = "https://github.com/ctoth/mcp-code-extractor#readme"
 
 [project.scripts]
-mcp-code-extractor = "mcp_code_extractor:main"
+mcp-server-code-extractor = "mcp_server_code_extractor:main"
 
 [project.optional-dependencies]
 dev = [
@@ -51,4 +51,4 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-py-modules = ["mcp_code_extractor"]
+py-modules = ["mcp_server_code_extractor"]
