@@ -1,5 +1,5 @@
 [project]
-name = "mcp-code-extractor"
+name = "mcp-server-code-extractor"
 version = "0.1.0"
 description = "A Model Context Protocol (MCP) server that provides precise code extraction tools using tree-sitter parsing"
 readme = "README.md"
@@ -30,9 +30,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ctoth/mcp-code-extractor"
-Repository = "https://github.com/ctoth/mcp-code-extractor"
-Issues = "https://github.com/ctoth/mcp-code-extractor/issues"
+Homepage = "https://github.com/ctoth/mcp_server_code_extractor"
+Repository = "https://github.com/ctoth/mcp_server_code_extractor"
+Issues = "https://github.com/ctoth/mcp_server_code_extractor/issues"
 Documentation = "https://github.com/ctoth/mcp-code-extractor#readme"
 
 [project.scripts]
