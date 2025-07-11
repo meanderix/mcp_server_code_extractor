@@ -607,12 +607,12 @@ def main():
     # If run with --help, show usage
     if len(sys.argv) > 1 and sys.argv[1] in ['--help', '-h']:
         print("""
-MCP Extract - Simple code extraction using tree-sitter
+mcp-server-code-extractor - A Model Context Protocol (MCP) server that provides precise code extraction tools using tree-sitter parsing
 
 This is an MCP server that provides code extraction tools for Claude Code.
 
 Setup for Claude Code:
-  claude mcp add extract -s user -- uv run /path/to/this/script.py
+  claude mcp add mcp-server-code-extractor -s user -- uv run /path/to/this/script.py
 
 Tools provided:
   - get_function(file, name): Extract a complete function with line numbers
@@ -627,7 +627,7 @@ Supported languages:
   Python, JavaScript, TypeScript, Go, Rust, Java, C/C++, Ruby, PHP, 
   Swift, Kotlin, and 30+ more via tree-sitter-languages.
 
-For more info: https://github.com/yourusername/mcp-extract
+For more info: https://github.com/ctoth/mcp_server_code_extractor
         """)
         sys.exit(0)
 
