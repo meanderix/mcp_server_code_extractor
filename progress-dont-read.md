@@ -31,11 +31,47 @@ The concise tool descriptions should make it easier for Claude to:
 - Use the tools effectively for code investigation
 - Avoid verbose Read operations on code files
 
-## Results (to be filled after experiment)
-- Did Claude use get_symbols() first for exploration?
-- Did Claude use get_function()/get_class() for specific extraction?
-- Did Claude avoid Read tool for code investigation?
-- Overall tool usage quality:
+## Results - Experiment 1: Concise Descriptions (FAILED)
+- **Did Claude use get_symbols() first for exploration?** ❌ NO
+- **Did Claude use get_function()/get_class() for specific extraction?** ❌ NO  
+- **Did Claude avoid Read tool for code investigation?** ❌ NO
+- **Overall tool usage quality:** COMPLETE FAILURE
+
+### What Actually Happened
+Claude was asked to "investigate this repo" and:
+1. Used Read(mcp_code_extractor.py) to read the entire 640-line file
+2. Completely ignored all available MCP tools
+3. Never attempted get_symbols(), get_function(), or any MCP tool
+4. Followed traditional Read → analyze workflow despite tool availability
+
+### Key Insights
+- **Concise descriptions alone are insufficient** to change behavior
+- **Claude defaults to familiar Read workflow** regardless of better alternatives
+- **Having tools available ≠ using tools** - need forcing mechanism
+- **Tool descriptions need stronger guidance**, not just clarity
 
 ---
-Experiment started: 2025-07-11
+Experiment 1 completed: 2025-07-11 - FAILED
+
+## Experiment 2: Enhanced Tool Descriptions with Workflow Guidance
+
+### Hypothesis
+Adding explicit workflow guidance and stronger language to tool descriptions will force Claude to use MCP tools instead of Read.
+
+### Changes to Test
+- Add WARNING sections about Read being inefficient for code
+- Include explicit "INSTEAD OF Read" language in descriptions
+- Add workflow examples in tool descriptions
+- Make tools obviously superior with richer output
+
+### Test Question
+"Analyze this codebase and tell me about its main functionality and key components."
+
+### Success Criteria
+- Claude uses get_symbols() first for exploration
+- Claude uses get_function()/get_class() for specific extraction
+- Claude avoids Read tool entirely for code investigation
+- Claude follows guided workflow patterns
+
+---
+Experiment 2 started: 2025-07-11
