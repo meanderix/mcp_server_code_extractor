@@ -162,13 +162,22 @@ class CodeExtractor:
                         }
                     symbol_captures[symbol_id]['captures'][capture_name] = node
                     
-                    # Set symbol kind
+                    # Set symbol kind (prioritize more specific types)
+                    current_kind = symbol_captures[symbol_id]['kind']
+                    
                     if symbol_type == 'class':
                         symbol_captures[symbol_id]['kind'] = SymbolKind.CLASS
                     elif symbol_type in ['method', 'async_method', 'decorated_method']:
+                        # Methods take priority over functions
                         symbol_captures[symbol_id]['kind'] = SymbolKind.METHOD
                     elif symbol_type in ['function', 'async_function', 'decorated_function']:
-                        symbol_captures[symbol_id]['kind'] = SymbolKind.FUNCTION
+                        # Only set as function if not already a method
+                        if current_kind != SymbolKind.METHOD:
+                            symbol_captures[symbol_id]['kind'] = SymbolKind.FUNCTION
+                    elif symbol_type == 'variable':
+                        symbol_captures[symbol_id]['kind'] = SymbolKind.VARIABLE
+                    elif symbol_type == 'import':
+                        symbol_captures[symbol_id]['kind'] = SymbolKind.IMPORT
                     
         # Second pass: add name and other captures to existing symbols
         for node, capture_name in captures:
@@ -289,7 +298,13 @@ class CodeExtractor:
                 symbol.parameters = self._parse_parameters(node, source_bytes)
                 break
         
-        # For now, extract docstring from function body if present
+        # Extract return type
+        for capture_name, node in captures.items():
+            if capture_name.endswith('.return_type'):
+                symbol.return_type = source_bytes[node.start_byte:node.end_byte].decode('utf-8')
+                break
+        
+        # Extract docstring from function body if present
         if definition_node and definition_node.children:
             # Look for function body
             for child in definition_node.children:
@@ -308,11 +323,17 @@ class CodeExtractor:
         for capture_name, node in captures.items():
             if capture_name.endswith('.docstring'):
                 docstring = source_bytes[node.start_byte:node.end_byte].decode('utf-8')
-                symbol.docstring = docstring.strip('"\'').strip()
+                docstring = docstring.strip('"\'').strip()
+                if docstring:
+                    symbol.docstring = docstring
                 break
     
     def _extract_variable_details(self, symbol: CodeSymbol, captures: Dict[str, Any], source_bytes: bytes):
         """Extract variable/constant specific details."""
+        # Determine if this is a constant (uppercase name)
+        if symbol.name.isupper():
+            symbol.kind = SymbolKind.CONSTANT
+            
         # Extract type annotation
         for capture_name, node in captures.items():
             if capture_name.endswith('.type'):
