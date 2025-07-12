@@ -429,7 +429,7 @@ def main():
     mcp = FastMCP("extract")
     
     @mcp.tool()
-    def get_symbols_tool(file_path: str, git_revision: Optional[str] = None) -> list:
+    def get_symbols_tool(path_or_url: str, git_revision: Optional[str] = None) -> list:
         """
         🚨 **ALWAYS USE THIS FIRST** for code investigation - DO NOT use Read()!
         
@@ -438,13 +438,18 @@ def main():
         DON'T read entire files to understand code structure - use this instead.
         
         Args:
-            file_path: Path to the source file
-            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.)
+            path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
+            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.) - not supported for URLs
+            
+        Examples:
+            get_symbols_tool("/path/to/file.py")  # Local file
+            get_symbols_tool("https://raw.githubusercontent.com/user/repo/main/file.py")  # GitHub raw URL
+            get_symbols_tool("/path/to/file.py", "HEAD~1")  # Git revision
         """
-        return get_symbols(file_path, git_revision)
+        return get_symbols(path_or_url, git_revision)
     
     @mcp.tool()
-    def get_function_tool(file_path: str, function_name: str, git_revision: Optional[str] = None) -> dict:
+    def get_function_tool(path_or_url: str, function_name: str, git_revision: Optional[str] = None) -> dict:
         """
         Extract function definition - USE THIS INSTEAD OF Read() for specific functions!
         
@@ -453,14 +458,18 @@ def main():
         If you're looking for a specific function, this is better than searching.
         
         Args:
-            file_path: Path to the source file
+            path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
             function_name: Name of the function to extract
-            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.)
+            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.) - not supported for URLs
+            
+        Examples:
+            get_function_tool("/path/to/file.py", "my_function")  # Local file
+            get_function_tool("https://raw.githubusercontent.com/user/repo/main/file.py", "my_function")  # GitHub raw URL
         """
-        return find_function(None)(file_path, function_name, git_revision)
+        return find_function(None)(path_or_url, function_name, git_revision)
     
     @mcp.tool()
-    def get_class_tool(file_path: str, class_name: str, git_revision: Optional[str] = None) -> dict:
+    def get_class_tool(path_or_url: str, class_name: str, git_revision: Optional[str] = None) -> dict:
         """
         Extract class definition - USE THIS INSTEAD OF Read() for specific classes!
         
@@ -469,40 +478,52 @@ def main():
         If you're looking for a specific class, this is better than searching.
         
         Args:
-            file_path: Path to the source file
+            path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
             class_name: Name of the class to extract
-            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.)
+            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.) - not supported for URLs
+            
+        Examples:
+            get_class_tool("/path/to/file.py", "MyClass")  # Local file
+            get_class_tool("https://raw.githubusercontent.com/user/repo/main/file.py", "MyClass")  # GitHub raw URL
         """
-        return find_class(None)(file_path, class_name, git_revision)
+        return find_class(None)(path_or_url, class_name, git_revision)
     
     @mcp.tool()
-    def get_lines_tool(file_path: str, start_line: int, end_line: int, git_revision: Optional[str] = None) -> dict:
+    def get_lines_tool(path_or_url: str, start_line: int, end_line: int, git_revision: Optional[str] = None) -> dict:
         """
         Get specific lines from a file using precise line range control.
         
         Use when you know exact line numbers - better than reading entire files.
         
         Args:
-            file_path: Path to the source file
+            path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
             start_line: Starting line number (1-based)
             end_line: Ending line number (1-based, inclusive)
-            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.)
+            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.) - not supported for URLs
+            
+        Examples:
+            get_lines_tool("/path/to/file.py", 10, 20)  # Local file lines 10-20
+            get_lines_tool("https://raw.githubusercontent.com/user/repo/main/file.py", 1, 50)  # GitHub raw URL
         """
-        return get_lines(file_path, start_line, end_line, git_revision)
+        return get_lines(path_or_url, start_line, end_line, git_revision)
     
     @mcp.tool()
-    def get_signature_tool(file_path: str, function_name: str, git_revision: Optional[str] = None) -> dict:
+    def get_signature_tool(path_or_url: str, function_name: str, git_revision: Optional[str] = None) -> dict:
         """
         Get just the signature/declaration of a function without full implementation.
         
         Use for function interfaces, parameters, return types. Lighter than get_function.
         
         Args:
-            file_path: Path to the source file
+            path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
             function_name: Name of the function to get signature for
-            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.)
+            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.) - not supported for URLs
+            
+        Examples:
+            get_signature_tool("/path/to/file.py", "my_function")  # Local file
+            get_signature_tool("https://raw.githubusercontent.com/user/repo/main/file.py", "my_function")  # GitHub raw URL
         """
-        return get_signature(file_path, function_name, git_revision)
+        return get_signature(path_or_url, function_name, git_revision)
     
     # Run the server
     mcp.run()
