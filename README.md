@@ -1,8 +1,8 @@
-# MCP Code Extractor
+# MCP Server Code Extractor
 
 A Model Context Protocol (MCP) server that provides precise code extraction tools using tree-sitter parsing. Extract functions, classes, and code snippets from 30+ programming languages without manual parsing.
 
-## Why MCP Code Extractor?
+## Why MCP Server Code Extractor?
 
 When working with AI coding assistants like Claude, you often need to:
 - Extract specific functions or classes from large codebases
@@ -10,7 +10,7 @@ When working with AI coding assistants like Claude, you often need to:
 - Retrieve precise code snippets with accurate line numbers
 - Avoid manual parsing and grep/sed/awk gymnastics
 
-MCP Code Extractor solves these problems by providing structured, tree-sitter-powered code extraction tools directly within your AI assistant.
+MCP Server Code Extractor solves these problems by providing structured, tree-sitter-powered code extraction tools directly within your AI assistant.
 
 ## Features
 
@@ -30,11 +30,11 @@ MCP Code Extractor solves these problems by providing structured, tree-sitter-po
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Clone this repository
-git clone https://github.com/ctoth/mcp-code-extractor
-cd mcp-code-extractor
+git clone https://github.com/ctoth/mcp_server_code_extractor
+cd mcp_server_code_extractor
 
 # Run directly with UV (no installation needed!)
-uv run mcp_code_extractor.py
+uv run mcp_server_code_extractor.py
 ```
 
 ### Traditional Installation
@@ -50,9 +50,9 @@ Add to your Claude Desktop configuration:
 ```json
 {
   "mcpServers": {
-    "code-extractor": {
+    "mcp-server-code-extractor": {
       "command": "uv",
-      "args": ["run", "/path/to/mcp_code_extractor.py"]
+      "args": ["run", "/path/to/mcp_server_code_extractor.py"]
     }
   }
 }
@@ -63,9 +63,9 @@ Or with traditional Python:
 ```json
 {
   "mcpServers": {
-    "code-extractor": {
+    "mcp-server-code-extractor": {
       "command": "python",
-      "args": ["/path/to/mcp_code_extractor.py"]
+      "args": ["/path/to/mcp_server_code_extractor.py"]
     }
   }
 }
@@ -207,7 +207,7 @@ Traditional file reading tools require you to:
 - Count lines manually for extraction
 - Deal with complex syntax and edge cases
 
-MCP Code Extractor:
+MCP Server Code Extractor:
 - ✅ Extracts exactly what you need
 - ✅ Provides structured data with metadata
 - ✅ Handles complex syntax automatically
