@@ -128,9 +128,15 @@ LANG_MAP = {
 }
 
 
-def get_language_for_file(file_path: str) -> str:
-    """Get the language name for a file."""
-    ext = Path(file_path).suffix.lower()
+def get_language_for_file(path_or_url: str) -> str:
+    """Get the language name for a file or URL."""
+    # For URLs, extract file extension from the path component
+    if path_or_url.startswith(('http://', 'https://')):
+        from urllib.parse import urlparse
+        parsed = urlparse(path_or_url)
+        ext = Path(parsed.path).suffix.lower()
+    else:
+        ext = Path(path_or_url).suffix.lower()
     return LANG_MAP.get(ext, 'text')
 
 
@@ -143,10 +149,10 @@ def find_function(node) -> dict:
     If you're looking for a specific function, this is better than searching.
     """
     
-    def get_function(file_path: str, function_name: str, git_revision: Optional[str] = None) -> dict:
+    def get_function(path_or_url: str, function_name: str, git_revision: Optional[str] = None) -> dict:
         """Extract a specific function from a file."""
         try:
-            lang_name = get_language_for_file(file_path)
+            lang_name = get_language_for_file(path_or_url)
             
             # Get tree-sitter parser
             try:
@@ -154,7 +160,7 @@ def find_function(node) -> dict:
             except Exception:
                 return {"error": f"Language '{lang_name}' not supported"}
             
-            source = get_file_content(file_path, git_revision)
+            source = get_file_content(path_or_url, git_revision)
             
             tree = parser.parse(source)
             
@@ -227,12 +233,12 @@ def find_function(node) -> dict:
                 "end_line": end_line,
                 "lines": f"{start_line}-{end_line}",
                 "function": function_name,
-                "file": file_path,
+                "file": path_or_url,
                 "language": lang_name
             }
             
         except Exception as e:
-            return {"error": f"Failed to parse '{file_path}': {str(e)}"}
+            return {"error": f"Failed to parse '{path_or_url}': {str(e)}"}
     
     return get_function
 
@@ -246,10 +252,10 @@ def find_class(node) -> dict:
     If you're looking for a specific class, this is better than searching.
     """
     
-    def get_class(file_path: str, class_name: str, git_revision: Optional[str] = None) -> dict:
+    def get_class(path_or_url: str, class_name: str, git_revision: Optional[str] = None) -> dict:
         """Extract a specific class from a file."""
         try:
-            lang_name = get_language_for_file(file_path)
+            lang_name = get_language_for_file(path_or_url)
             
             # Get tree-sitter parser
             try:
@@ -257,7 +263,7 @@ def find_class(node) -> dict:
             except Exception:
                 return {"error": f"Language '{lang_name}' not supported"}
             
-            source = get_file_content(file_path, git_revision)
+            source = get_file_content(path_or_url, git_revision)
             
             tree = parser.parse(source)
             
@@ -323,17 +329,17 @@ def find_class(node) -> dict:
                 "end_line": end_line,
                 "lines": f"{start_line}-{end_line}",
                 "class": class_name,
-                "file": file_path,
+                "file": path_or_url,
                 "language": lang_name
             }
             
         except Exception as e:
-            return {"error": f"Failed to parse '{file_path}': {str(e)}"}
+            return {"error": f"Failed to parse '{path_or_url}': {str(e)}"}
     
     return get_class
 
 
-def get_symbols(file_path: str, git_revision: Optional[str] = None) -> list:
+def get_symbols(path_or_url: str, git_revision: Optional[str] = None) -> list:
     """
     🚨 **ALWAYS USE THIS FIRST** for code investigation - DO NOT use Read()!
     
@@ -343,8 +349,8 @@ def get_symbols(file_path: str, git_revision: Optional[str] = None) -> list:
     """
     
     try:
-        extractor = create_extractor(file_path)
-        source_code = get_file_content(file_path, git_revision)
+        extractor = create_extractor(path_or_url)
+        source_code = get_file_content(path_or_url, git_revision)
         symbols = extractor.extract_symbols(source_code)
         
         # Convert to dict format for MCP compatibility
@@ -355,10 +361,10 @@ def get_symbols(file_path: str, git_revision: Optional[str] = None) -> list:
         return result
         
     except Exception as e:
-        return [{"error": f"Failed to parse '{file_path}': {str(e)}"}]
+        return [{"error": f"Failed to parse '{path_or_url}': {str(e)}"}]
 
 
-def get_lines(file_path: str, start_line: int, end_line: int, git_revision: Optional[str] = None) -> dict:
+def get_lines(path_or_url: str, start_line: int, end_line: int, git_revision: Optional[str] = None) -> dict:
     """
     Get specific lines from a file using precise line range control.
     
@@ -372,7 +378,7 @@ def get_lines(file_path: str, start_line: int, end_line: int, git_revision: Opti
         if end_line < start_line:
             return {"error": "end_line must be >= start_line"}
         
-        source_code = get_file_content(file_path, git_revision)
+        source_code = get_file_content(path_or_url, git_revision)
         lines = source_code.splitlines(keepends=True)
         
         # Convert to 0-based indexing
@@ -386,21 +392,21 @@ def get_lines(file_path: str, start_line: int, end_line: int, git_revision: Opti
             "start_line": start_line,
             "end_line": min(end_line, len(lines)),
             "lines": f"{start_line}-{min(end_line, len(lines))}",
-            "file": file_path
+            "file": path_or_url
         }
         
     except Exception as e:
-        return {"error": f"Failed to read '{file_path}': {str(e)}"}
+        return {"error": f"Failed to read '{path_or_url}': {str(e)}"}
 
 
-def get_signature(file_path: str, function_name: str, git_revision: Optional[str] = None) -> dict:
+def get_signature(path_or_url: str, function_name: str, git_revision: Optional[str] = None) -> dict:
     """
     Get just the signature/declaration of a function without full implementation.
     
     Use for function interfaces, parameters, return types. Lighter than get_function.
     """
     
-    result = find_function(None)(file_path, function_name, git_revision)
+    result = find_function(None)(path_or_url, function_name, git_revision)
     
     if "error" in result:
         return result
