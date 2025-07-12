@@ -226,7 +226,7 @@ def find_function(node) -> dict:
             func_node = find_function(tree.root_node)
             
             if not func_node:
-                return {"error": f"Function '{function_name}' not found in {file_path}"}
+                return {"error": f"Function '{function_name}' not found in {path_or_url}"}
             
             # Extract the function code
             source_bytes = source.encode('utf-8') if isinstance(source, str) else source
@@ -327,7 +327,7 @@ def find_class(node) -> dict:
             class_node = find_class(tree.root_node)
             
             if not class_node:
-                return {"error": f"Class '{class_name}' not found in {file_path}"}
+                return {"error": f"Class '{class_name}' not found in {path_or_url}"}
             
             # Extract the class code
             source_bytes = source.encode('utf-8') if isinstance(source, str) else source
@@ -437,6 +437,23 @@ def get_signature(path_or_url: str, function_name: str, git_revision: Optional[s
 
 def main():
     """Main entry point for the MCP server."""
+    import argparse
+    import sys
+    
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(
+        description="MCP Server Code Extractor - Precise code extraction using tree-sitter",
+        prog="mcp-server-code-extractor"
+    )
+    parser.add_argument(
+        "--version", 
+        action="version", 
+        version="mcp-server-code-extractor 0.2.3"
+    )
+    
+    # Parse args but ignore them for MCP server mode
+    args = parser.parse_args()
+    
     # Initialize FastMCP server
     mcp = FastMCP("extract")
     
