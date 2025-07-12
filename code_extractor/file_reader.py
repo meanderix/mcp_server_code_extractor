@@ -1,23 +1,37 @@
-"""Unified file reading with VCS support."""
+"""Unified file reading with VCS and URL support."""
 
 from pathlib import Path
 from typing import Optional, Union
 
 from .vcs.factory import detect_vcs_provider
+from .url_fetcher import is_url, fetch_url_content
 
 
-def get_file_content(file_path: Union[str, Path], revision: Optional[str] = None) -> str:
+def get_file_content(path_or_url: Union[str, Path], revision: Optional[str] = None) -> str:
     """
-    Get file content from filesystem or VCS revision.
+    Get file content from filesystem, VCS revision, or URL.
     
     Args:
-        file_path: Path to file (string or Path object)
-        revision: Optional VCS revision (commit, branch, tag, etc.)
+        path_or_url: Path to file, or URL to fetch (GitHub raw, GitLab raw, direct file URL)
+        revision: Optional VCS revision (commit, branch, tag, etc.) - not supported for URLs
     
     Returns:
         File content as string
+        
+    Raises:
+        ValueError: If revision is specified with URL, or if no VCS found for path
+        URLFetchError: For URL-related errors (network, timeout, content issues)
     """
-    path_obj = Path(file_path) if isinstance(file_path, str) else file_path
+    path_str = str(path_or_url)
+    
+    # Handle URL case
+    if is_url(path_str):
+        if revision is not None:
+            raise ValueError("revision parameter is not applicable when path_or_url is a URL")
+        return fetch_url_content(path_str)
+    
+    # Handle filesystem/VCS case
+    path_obj = Path(path_str) if isinstance(path_or_url, str) else path_or_url
     
     if revision is None:
         # Filesystem read (backward compatible)
