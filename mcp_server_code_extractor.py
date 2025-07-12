@@ -44,7 +44,19 @@ Or traditional install:
 """
 
 import os
+import sys
 from pathlib import Path
+
+# Add current directory to path for local imports
+sys.path.insert(0, os.path.dirname(__file__))
+
+try:
+    from code_extractor import CodeExtractor, create_extractor
+    from code_extractor.models import SymbolKind
+except ImportError as e:
+    print(f"Error: Code extractor library not found: {e}")
+    print("Make sure it's installed or run from the correct directory.")
+    exit(1)
 
 try:
     from tree_sitter_languages import get_language, get_parser
@@ -366,147 +378,23 @@ def get_symbols(file_path: str) -> list:
     if not os.path.exists(file_path):
         return [{"error": f"File not found: {file_path}"}]
 
-    lang_name = get_language_for_file(file_path)
-    if lang_name == 'text':
-        return []  # Just return empty for unsupported files
-
     try:
-        parser = get_parser(lang_name)
-
-        with open(file_path, 'rb') as f:
-            source = f.read()
-
-        tree = parser.parse(source)
-        symbols = []
-
-        # Combined function and class types for each language
-        symbol_types = {
-            'python': {
-                'function_definition': 'function',
-                'async_function_definition': 'function',
-                'class_definition': 'class',
-            },
-            'javascript': {
-                'function_declaration': 'function',
-                'function_expression': 'function',
-                'arrow_function': 'function',
-                'class_declaration': 'class',
-            },
-            'typescript': {
-                'function_declaration': 'function',
-                'function_expression': 'function',
-                'arrow_function': 'function',
-                'method_definition': 'method',
-                'class_declaration': 'class',
-                'interface_declaration': 'interface',
-            },
-            'tsx': {
-                'function_declaration': 'function',
-                'function_expression': 'function',
-                'arrow_function': 'function',
-                'method_definition': 'method',
-                'class_declaration': 'class',
-                'interface_declaration': 'interface',
-            },
-            'go': {
-                'function_declaration': 'function',
-                'method_declaration': 'method',
-                'type_declaration': 'type',
-            },
-            'rust': {
-                'function_item': 'function',
-                'struct_item': 'struct',
-                'enum_item': 'enum',
-            },
-            'java': {
-                'method_declaration': 'method',
-                'constructor_declaration': 'constructor',
-                'class_declaration': 'class',
-            },
-            'c': {
-                'function_definition': 'function',
-            },
-            'cpp': {
-                'function_definition': 'function',
-                'class_specifier': 'class',
-            },
-            'c_sharp': {
-                'method_declaration': 'method',
-                'constructor_declaration': 'constructor',
-                'class_declaration': 'class',
-            },
-            'ruby': {
-                'method': 'method',
-                'singleton_method': 'method',
-                'class': 'class',
-            },
-            'php': {
-                'function_definition': 'function',
-                'method_declaration': 'method',
-                'class_declaration': 'class',
-            },
-            'swift': {
-                'function_declaration': 'function',
-                'class_declaration': 'class',
-            },
-            'kotlin': {
-                'function_declaration': 'function',
-                'class_declaration': 'class',
-            },
-            'scala': {
-                'function_definition': 'function',
-                'class_definition': 'class',
-            },
-        }
-
-        lang_symbols = symbol_types.get(lang_name, {})
-
-        def extract_symbols(node, depth=0):
-            if node.type in lang_symbols:
-                # Extract name
-                name = None
-                for child in node.children:
-                    if child.type in ['identifier', 'type_identifier', 'property_identifier', 'field_identifier']:
-                        name = source[child.start_byte:child.end_byte].decode(
-                            'utf-8')
-                        break
-
-                # Try field-based access as fallback
-                if not name and hasattr(node, 'child_by_field_name'):
-                    name_node = node.child_by_field_name('name')
-                    if name_node:
-                        name = source[name_node.start_byte:name_node.end_byte].decode(
-                            'utf-8')
-
-                if name:
-                    start_line = source[:node.start_byte].count(b'\n') + 1
-                    end_line = source[:node.end_byte].count(b'\n') + 1
-
-                    # Get first line as preview
-                    first_line = source[node.start_byte:node.end_byte].decode(
-                        'utf-8').split('\n')[0]
-                    if len(first_line) > 80:
-                        first_line = first_line[:77] + "..."
-
-                    symbols.append({
-                        'name': name,
-                        'type': lang_symbols[node.type],
-                        'start_line': start_line,
-                        'end_line': end_line,
-                        'lines': f"{start_line}-{end_line}",
-                        'preview': first_line
-                    })
-
-            # Recurse
-            for child in node.children:
-                extract_symbols(child, depth + 1)
-
-        extract_symbols(tree.root_node)
-        return symbols
-
+        extractor = create_extractor(file_path)
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            source_code = f.read()
+        
+        symbols = extractor.extract_symbols(source_code)
+        
+        # Convert to dict format for MCP compatibility
+        result = []
+        for symbol in symbols:
+            result.append(symbol.to_dict())
+        
+        return result
+        
     except Exception as e:
-        import traceback
-        return [{"error": f"Failed to parse '{file_path}': {e.__class__.__name__}: {e}", "traceback": traceback.format_exc()}]
+        return [{"error": f"Failed to parse '{file_path}': {str(e)}"}]
 
 
 @mcp.tool()
