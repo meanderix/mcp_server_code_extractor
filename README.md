@@ -18,7 +18,9 @@ MCP Server Code Extractor solves these problems by providing structured, tree-si
 - **🌍 30+ Languages**: Supports Python, JavaScript, TypeScript, Go, Rust, Java, C/C++, and many more
 - **📍 Line Numbers**: Every extraction includes precise line number information
 - **🔍 Code Discovery**: List all functions and classes in a file before extracting
-- **⚡ Fast & Lightweight**: Single-file implementation with minimal dependencies
+- **🌐 URL Support**: Fetch and extract code from GitHub, GitLab, and direct file URLs
+- **🔄 Git Integration**: Extract code from any git revision, branch, or tag
+- **⚡ Fast & Lightweight**: Efficient caching and minimal dependencies
 - **🤖 AI-Optimized**: Designed specifically for use with AI coding assistants
 
 ## Installation
@@ -141,7 +143,7 @@ Returns:
 
 ## Usage Examples
 
-### Example 1: Exploring a Python File
+### Example 1: Exploring Local Files
 
 ```python
 # First, see what's in the file
@@ -157,19 +159,35 @@ sig = get_signature("src/main.py", "process_data")
 # Returns: "def process_data(input_file: str, output_dir: Path) -> Dict[str, Any]:"
 ```
 
-### Example 2: Working with Classes
+### Example 2: Working with URLs
 
 ```python
-# Extract an entire class
+# Explore a GitHub file
+symbols = get_symbols("https://raw.githubusercontent.com/user/repo/main/src/api.py")
+
+# Extract function from GitLab
+result = get_function("https://gitlab.com/user/project/-/raw/main/utils.py", "helper_func")
+
+# Get lines from any URL
+lines = get_lines("https://example.com/code/script.py", 10, 25)
+```
+
+### Example 3: Working with Classes
+
+```python
+# Extract an entire class (local file)
 result = get_class("models/user.py", "User")
 # Returns: Complete User class with all methods
+
+# Extract class from URL
+result = get_class("https://raw.githubusercontent.com/user/repo/main/models.py", "DatabaseModel")
 
 # Get specific lines (e.g., just the __init__ method)
 lines = get_lines("models/user.py", 10, 25)
 # Returns: Lines 10-25 of the file
 ```
 
-### Example 3: Multi-Language Support
+### Example 4: Multi-Language Support
 
 ```javascript
 // Works with JavaScript/TypeScript

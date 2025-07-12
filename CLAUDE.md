@@ -62,7 +62,8 @@ This is an MCP (Model Context Protocol) server that provides precise code extrac
 - **Data Models** (`models.py`) - Rich symbol representations with hierarchical relationships  
 - **Language Support** (`languages.py`) - Detection and mapping for 30+ programming languages
 - **Tree-sitter Queries** (`queries/`) - Language-specific syntax parsing patterns
-- **File Reading** (`file_reader.py`) - Unified file reading with VCS support
+- **File Reading** (`file_reader.py`) - Unified file reading with VCS and URL support
+- **URL Fetching** (`url_fetcher.py`) - HTTP fetching with caching and error handling
 - **VCS Support** (`vcs/`) - Pluggable version control system abstraction
 - **Entry Points** (`__main__.py`) - Module execution support
 
@@ -125,9 +126,34 @@ The server exposes 5 tools to AI assistants:
 
 **Best Practice**: Always use `get_symbols` first for code exploration, then use specific extraction tools for detailed analysis.
 
+### URL Support
+
+All 5 MCP tools support URLs for fetching remote code:
+
+**Examples:**
+```python
+# GitHub raw URLs
+get_symbols("https://raw.githubusercontent.com/user/repo/main/src/main.py")
+get_function("https://raw.githubusercontent.com/user/repo/main/src/api.py", "handle_request")
+
+# GitLab raw URLs  
+get_class("https://gitlab.com/user/project/-/raw/main/src/models.py", "User")
+get_lines("https://gitlab.com/user/project/-/raw/main/config.py", 10, 20)
+
+# Direct file URLs
+get_signature("https://example.com/code/utils.py", "helper_function")
+```
+
+**Features:**
+- Automatic content-type validation (text/* only)
+- File size limits (1MB default, configurable)
+- TTL caching for performance (5min default)
+- Robust error handling for network issues
+- Support for GitHub, GitLab, and direct file URLs
+
 ### Git Revision Support
 
-All 5 MCP tools now support an optional `git_revision` parameter for extracting code from any git revision:
+All 5 MCP tools also support an optional `git_revision` parameter for extracting code from any git revision:
 
 **Examples:**
 ```python
@@ -135,7 +161,7 @@ All 5 MCP tools now support an optional `git_revision` parameter for extracting 
 get_symbols("src/main.py")
 get_function("src/main.py", "process_data")
 
-# Extract from git revisions
+# Extract from git revisions (NOT compatible with URLs)
 get_symbols("src/main.py", "HEAD~1")           # Previous commit
 get_function("src/main.py", "process_data", "feature-branch")  # Branch
 get_class("src/models.py", "User", "v1.0.0")   # Tagged version
@@ -157,3 +183,4 @@ get_signature("src/api.py", "handle_request", "HEAD^2")  # Merge parent
 - Git command must be available in PATH
 - Revision must exist in the repository
 - File must exist at the specified revision
+- **Note**: `git_revision` parameter is NOT supported when using URLs
