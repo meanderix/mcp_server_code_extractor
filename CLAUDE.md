@@ -52,6 +52,10 @@ uv run flake8 .
 uv run mypy .
 ```
 
+## Version Management
+
+- To bump the version use uv version --bump <patch|minor|major> commit (only the changes to pyproject.toml) push, and monitor the workflow run to verify it actually gets deployed.
+
 ## Architecture Overview
 
 This is an MCP (Model Context Protocol) server that provides precise code extraction using tree-sitter parsing. The codebase has a **clean package structure**:
@@ -184,3 +188,4 @@ get_signature("src/api.py", "handle_request", "HEAD^2")  # Merge parent
 - Revision must exist in the repository
 - File must exist at the specified revision
 - **Note**: `git_revision` parameter is NOT supported when using URLs
+```
