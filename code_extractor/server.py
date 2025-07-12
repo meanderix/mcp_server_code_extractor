@@ -25,6 +25,7 @@ except ImportError:
 # Local imports
 from .extractor import create_extractor
 from .languages import get_language_for_file
+from .file_reader import get_file_content
 
 
 # Language mapping for file extensions
@@ -142,11 +143,8 @@ def find_function(node) -> dict:
     If you're looking for a specific function, this is better than searching.
     """
     
-    def get_function(file_path: str, function_name: str) -> dict:
+    def get_function(file_path: str, function_name: str, git_revision: Optional[str] = None) -> dict:
         """Extract a specific function from a file."""
-        if not os.path.exists(file_path):
-            return {"error": f"File not found: {file_path}"}
-        
         try:
             lang_name = get_language_for_file(file_path)
             
@@ -156,8 +154,7 @@ def find_function(node) -> dict:
             except Exception:
                 return {"error": f"Language '{lang_name}' not supported"}
             
-            with open(file_path, 'r', encoding='utf-8') as f:
-                source = f.read()
+            source = get_file_content(file_path, git_revision)
             
             tree = parser.parse(source)
             
@@ -249,11 +246,8 @@ def find_class(node) -> dict:
     If you're looking for a specific class, this is better than searching.
     """
     
-    def get_class(file_path: str, class_name: str) -> dict:
+    def get_class(file_path: str, class_name: str, git_revision: Optional[str] = None) -> dict:
         """Extract a specific class from a file."""
-        if not os.path.exists(file_path):
-            return {"error": f"File not found: {file_path}"}
-        
         try:
             lang_name = get_language_for_file(file_path)
             
@@ -263,8 +257,7 @@ def find_class(node) -> dict:
             except Exception:
                 return {"error": f"Language '{lang_name}' not supported"}
             
-            with open(file_path, 'r', encoding='utf-8') as f:
-                source = f.read()
+            source = get_file_content(file_path, git_revision)
             
             tree = parser.parse(source)
             
@@ -340,7 +333,7 @@ def find_class(node) -> dict:
     return get_class
 
 
-def get_symbols(file_path: str) -> list:
+def get_symbols(file_path: str, git_revision: Optional[str] = None) -> list:
     """
     🚨 **ALWAYS USE THIS FIRST** for code investigation - DO NOT use Read()!
     
@@ -349,15 +342,9 @@ def get_symbols(file_path: str) -> list:
     DON'T read entire files to understand code structure - use this instead.
     """
     
-    if not os.path.exists(file_path):
-        return [{"error": f"File not found: {file_path}"}]
-    
     try:
         extractor = create_extractor(file_path)
-        
-        with open(file_path, 'r', encoding='utf-8') as f:
-            source_code = f.read()
-        
+        source_code = get_file_content(file_path, git_revision)
         symbols = extractor.extract_symbols(source_code)
         
         # Convert to dict format for MCP compatibility
@@ -371,15 +358,12 @@ def get_symbols(file_path: str) -> list:
         return [{"error": f"Failed to parse '{file_path}': {str(e)}"}]
 
 
-def get_lines(file_path: str, start_line: int, end_line: int) -> dict:
+def get_lines(file_path: str, start_line: int, end_line: int, git_revision: Optional[str] = None) -> dict:
     """
     Get specific lines from a file using precise line range control.
     
     Use when you know exact line numbers - better than reading entire files.
     """
-    
-    if not os.path.exists(file_path):
-        return {"error": f"File not found: {file_path}"}
     
     try:
         if start_line < 1:
@@ -388,8 +372,8 @@ def get_lines(file_path: str, start_line: int, end_line: int) -> dict:
         if end_line < start_line:
             return {"error": "end_line must be >= start_line"}
         
-        with open(file_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
+        source_code = get_file_content(file_path, git_revision)
+        lines = source_code.splitlines(keepends=True)
         
         # Convert to 0-based indexing
         start_idx = max(0, start_line - 1)
@@ -409,14 +393,14 @@ def get_lines(file_path: str, start_line: int, end_line: int) -> dict:
         return {"error": f"Failed to read '{file_path}': {str(e)}"}
 
 
-def get_signature(file_path: str, function_name: str) -> dict:
+def get_signature(file_path: str, function_name: str, git_revision: Optional[str] = None) -> dict:
     """
     Get just the signature/declaration of a function without full implementation.
     
     Use for function interfaces, parameters, return types. Lighter than get_function.
     """
     
-    result = find_function(None)(file_path, function_name)
+    result = find_function(None)(file_path, function_name, git_revision)
     
     if "error" in result:
         return result
@@ -439,55 +423,80 @@ def main():
     mcp = FastMCP("extract")
     
     @mcp.tool()
-    def get_symbols_tool(file_path: str) -> list:
+    def get_symbols_tool(file_path: str, git_revision: Optional[str] = None) -> list:
         """
         🚨 **ALWAYS USE THIS FIRST** for code investigation - DO NOT use Read()!
         
         List all functions, classes, and symbols with line numbers.
         
         DON'T read entire files to understand code structure - use this instead.
+        
+        Args:
+            file_path: Path to the source file
+            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.)
         """
-        return get_symbols(file_path)
+        return get_symbols(file_path, git_revision)
     
     @mcp.tool()
-    def get_function_tool(file_path: str, function_name: str) -> dict:
+    def get_function_tool(file_path: str, function_name: str, git_revision: Optional[str] = None) -> dict:
         """
         Extract function definition - USE THIS INSTEAD OF Read() for specific functions!
         
         DON'T use Read() + grep/search. Use this for precise extraction with tree-sitter.
         
         If you're looking for a specific function, this is better than searching.
+        
+        Args:
+            file_path: Path to the source file
+            function_name: Name of the function to extract
+            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.)
         """
-        return find_function(None)(file_path, function_name)
+        return find_function(None)(file_path, function_name, git_revision)
     
     @mcp.tool()
-    def get_class_tool(file_path: str, class_name: str) -> dict:
+    def get_class_tool(file_path: str, class_name: str, git_revision: Optional[str] = None) -> dict:
         """
         Extract class definition - USE THIS INSTEAD OF Read() for specific classes!
         
         DON'T use Read() + grep/search. Use this for precise extraction with tree-sitter.
         
         If you're looking for a specific class, this is better than searching.
+        
+        Args:
+            file_path: Path to the source file
+            class_name: Name of the class to extract
+            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.)
         """
-        return find_class(None)(file_path, class_name)
+        return find_class(None)(file_path, class_name, git_revision)
     
     @mcp.tool()
-    def get_lines_tool(file_path: str, start_line: int, end_line: int) -> dict:
+    def get_lines_tool(file_path: str, start_line: int, end_line: int, git_revision: Optional[str] = None) -> dict:
         """
         Get specific lines from a file using precise line range control.
         
         Use when you know exact line numbers - better than reading entire files.
+        
+        Args:
+            file_path: Path to the source file
+            start_line: Starting line number (1-based)
+            end_line: Ending line number (1-based, inclusive)
+            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.)
         """
-        return get_lines(file_path, start_line, end_line)
+        return get_lines(file_path, start_line, end_line, git_revision)
     
     @mcp.tool()
-    def get_signature_tool(file_path: str, function_name: str) -> dict:
+    def get_signature_tool(file_path: str, function_name: str, git_revision: Optional[str] = None) -> dict:
         """
         Get just the signature/declaration of a function without full implementation.
         
         Use for function interfaces, parameters, return types. Lighter than get_function.
+        
+        Args:
+            file_path: Path to the source file
+            function_name: Name of the function to get signature for
+            git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.)
         """
-        return get_signature(file_path, function_name)
+        return get_signature(file_path, function_name, git_revision)
     
     # Run the server
     mcp.run()
