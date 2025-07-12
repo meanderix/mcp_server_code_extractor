@@ -59,4 +59,5 @@ packages = ["code_extractor"]
 [dependency-groups]
 dev = [
     "pytest>=8.4.1",
+    "responses>=0.25.7",
 ]

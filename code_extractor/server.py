@@ -161,8 +161,9 @@ def find_function(node) -> dict:
                 return {"error": f"Language '{lang_name}' not supported"}
             
             source = get_file_content(path_or_url, git_revision)
+            source_bytes = source.encode('utf-8') if isinstance(source, str) else source
             
-            tree = parser.parse(source)
+            tree = parser.parse(source_bytes)
             
             # Define function node types for different languages
             func_types = {
@@ -189,14 +190,18 @@ def find_function(node) -> dict:
                     name = None
                     for child in node.children:
                         if child.type == 'identifier':
-                            name = source[child.start_byte:child.end_byte].decode(
-                                'utf-8') if isinstance(source, bytes) else source[child.start_byte:child.end_byte]
+                            if isinstance(source, str):
+                                name = source[child.start_byte:child.end_byte]
+                            else:
+                                name = source[child.start_byte:child.end_byte].decode('utf-8') if isinstance(source, bytes) else source[child.start_byte:child.end_byte]
                             break
                         elif hasattr(child, 'children'):
                             for grandchild in child.children:
                                 if grandchild.type == 'identifier':
-                                    name = source[grandchild.start_byte:grandchild.end_byte].decode(
-                                        'utf-8') if isinstance(source, bytes) else source[grandchild.start_byte:grandchild.end_byte]
+                                    if isinstance(source, str):
+                                        name = source[grandchild.start_byte:grandchild.end_byte]
+                                    else:
+                                        name = source[grandchild.start_byte:grandchild.end_byte].decode('utf-8') if isinstance(source, bytes) else source[grandchild.start_byte:grandchild.end_byte]
                                     break
                             if name:
                                 break
@@ -204,8 +209,10 @@ def find_function(node) -> dict:
                     # Use field name if available (more reliable)
                     name_node = node.child_by_field_name('name')
                     if name_node:
-                        name = source[name_node.start_byte:name_node.end_byte].decode(
-                            'utf-8') if isinstance(source, bytes) else source[name_node.start_byte:name_node.end_byte]
+                        if isinstance(source, str):
+                            name = source[name_node.start_byte:name_node.end_byte]
+                        else:
+                            name = source[name_node.start_byte:name_node.end_byte].decode('utf-8') if isinstance(source, bytes) else source[name_node.start_byte:name_node.end_byte]
                     
                     if name == function_name:
                         return node
@@ -264,8 +271,9 @@ def find_class(node) -> dict:
                 return {"error": f"Language '{lang_name}' not supported"}
             
             source = get_file_content(path_or_url, git_revision)
+            source_bytes = source.encode('utf-8') if isinstance(source, str) else source
             
-            tree = parser.parse(source)
+            tree = parser.parse(source_bytes)
             
             # Define class node types for different languages
             class_types = {
@@ -293,16 +301,20 @@ def find_class(node) -> dict:
                     # Extract class name
                     for child in node.children:
                         if child.type == 'identifier':
-                            name = source[child.start_byte:child.end_byte].decode(
-                                'utf-8') if isinstance(source, bytes) else source[child.start_byte:child.end_byte]
+                            if isinstance(source, str):
+                                name = source[child.start_byte:child.end_byte]
+                            else:
+                                name = source[child.start_byte:child.end_byte].decode('utf-8') if isinstance(source, bytes) else source[child.start_byte:child.end_byte]
                             if name == class_name:
                                 return node
                     
                     # Use field name if available (more reliable)
                     name_node = node.child_by_field_name('name')
                     if name_node:
-                        name = source[name_node.start_byte:name_node.end_byte].decode(
-                            'utf-8') if isinstance(source, bytes) else source[name_node.start_byte:name_node.end_byte]
+                        if isinstance(source, str):
+                            name = source[name_node.start_byte:name_node.end_byte]
+                        else:
+                            name = source[name_node.start_byte:name_node.end_byte].decode('utf-8') if isinstance(source, bytes) else source[name_node.start_byte:name_node.end_byte]
                         if name == class_name:
                             return node
                 
@@ -418,7 +430,7 @@ def get_signature(path_or_url: str, function_name: str, git_revision: Optional[s
     return {
         "signature": signature,
         "function": function_name,
-        "file": file_path,
+        "file": path_or_url,
         "start_line": result["start_line"]
     }
 
