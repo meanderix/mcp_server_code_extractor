@@ -54,4 +54,6 @@ build-backend = "setuptools.build_meta"
 py-modules = ["mcp_server_code_extractor"]
 
 [dependency-groups]
-dev = []
+dev = [
+    "pytest>=8.4.1",
+]
