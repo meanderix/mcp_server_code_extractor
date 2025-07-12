@@ -1,22 +1,49 @@
-name: Publish to PyPI
+name: Bump Version and Publish to PyPI
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 jobs:
-  release:
-    name: Publish to PyPI
+  bump-and-release:
+    name: Bump Version and Publish to PyPI
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
       id-token: write
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Install uv and setup Python
         uses: astral-sh/setup-uv@v3
+      
+      - name: Bump version
+        run: |
+          uv version --bump ${{ inputs.bump_type }}
+          NEW_VERSION=$(uv version --short)
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+      
+      - name: Commit version bump
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add pyproject.toml uv.lock
+          git commit -m "Bump version to ${{ env.NEW_VERSION }}"
+          git tag "v${{ env.NEW_VERSION }}"
+          git push origin master
+          git push origin "v${{ env.NEW_VERSION }}"
       
       - name: Build package
         run: uv build
