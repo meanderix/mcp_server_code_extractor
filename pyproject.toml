@@ -36,7 +36,7 @@ Issues = "https://github.com/ctoth/mcp_server_code_extractor/issues"
 Documentation = "https://github.com/ctoth/mcp-code-extractor#readme"
 
 [project.scripts]
-mcp-server-code-extractor = "mcp_server_code_extractor:main"
+mcp-server-code-extractor = "code_extractor.server:main"
 
 [project.optional-dependencies]
 dev = [
@@ -51,7 +51,6 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-py-modules = ["mcp_server_code_extractor"]
 packages = ["code_extractor"]
 
 [dependency-groups]
