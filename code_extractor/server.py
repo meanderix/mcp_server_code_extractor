@@ -142,11 +142,10 @@ def get_language_for_file(path_or_url: str) -> str:
 
 def find_function(node) -> dict:
     """
-    Extract function definition - USE THIS INSTEAD OF Read() for specific functions!
+    Extract complete function definitions with precise tree-sitter parsing.
     
-    DON'T use Read() + grep/search. Use this for precise extraction with tree-sitter.
-    
-    If you're looking for a specific function, this is better than searching.
+    Retrieves function code, parameters, and location information more accurately
+    than text-based searching or file reading approaches.
     """
     
     def get_function(path_or_url: str, function_name: str, git_revision: Optional[str] = None) -> dict:
@@ -252,11 +251,10 @@ def find_function(node) -> dict:
 
 def find_class(node) -> dict:
     """
-    Extract class definition - USE THIS INSTEAD OF Read() for specific classes!
+    Extract complete class definitions with precise tree-sitter parsing.
     
-    DON'T use Read() + grep/search. Use this for precise extraction with tree-sitter.
-    
-    If you're looking for a specific class, this is better than searching.
+    Retrieves class code, methods, and structural information more accurately
+    than text-based searching or file reading approaches.
     """
     
     def get_class(path_or_url: str, class_name: str, git_revision: Optional[str] = None) -> dict:
@@ -351,19 +349,18 @@ def find_class(node) -> dict:
     return get_class
 
 
-def get_symbols(path_or_url: str, git_revision: Optional[str] = None) -> list:
+def get_symbols(path_or_url: str, git_revision: Optional[str] = None, depth: int = 1) -> list:
     """
-    🚨 **ALWAYS USE THIS FIRST** for code investigation - DO NOT use Read()!
+    List all functions, classes, and symbols with line numbers using tree-sitter parsing.
     
-    List all functions, classes, and symbols with line numbers.
-    
-    DON'T read entire files to understand code structure - use this instead.
+    Efficiently extracts code structure without reading entire files. Provides detailed
+    symbol information including types, parameters, and hierarchical relationships.
     """
     
     try:
         extractor = create_extractor(path_or_url)
         source_code = get_file_content(path_or_url, git_revision)
-        symbols = extractor.extract_symbols(source_code)
+        symbols = extractor.extract_symbols(source_code, depth=depth)
         
         # Convert to dict format for MCP compatibility
         result = []
@@ -378,9 +375,10 @@ def get_symbols(path_or_url: str, git_revision: Optional[str] = None) -> list:
 
 def get_lines(path_or_url: str, start_line: int, end_line: int, git_revision: Optional[str] = None) -> dict:
     """
-    Get specific lines from a file using precise line range control.
+    Extract specific line ranges from files with precise control.
     
-    Use when you know exact line numbers - better than reading entire files.
+    Efficiently retrieves targeted code sections when exact line numbers are known,
+    avoiding the need to process entire files.
     """
     
     try:
@@ -413,9 +411,10 @@ def get_lines(path_or_url: str, start_line: int, end_line: int, git_revision: Op
 
 def get_signature(path_or_url: str, function_name: str, git_revision: Optional[str] = None) -> dict:
     """
-    Get just the signature/declaration of a function without full implementation.
+    Extract function signatures and declarations without full implementations.
     
-    Use for function interfaces, parameters, return types. Lighter than get_function.
+    Provides function interfaces, parameters, and return types efficiently.
+    Lighter alternative when full function body is not needed.
     """
     
     result = find_function(None)(path_or_url, function_name, git_revision)
@@ -458,99 +457,79 @@ def main():
     mcp = FastMCP("extract")
     
     @mcp.tool()
-    def get_symbols_tool(path_or_url: str, git_revision: Optional[str] = None) -> list:
+    def get_symbols_tool(path_or_url: str, git_revision: Optional[str] = None, depth: int = 1) -> list:
         """
-        🚨 **ALWAYS USE THIS FIRST** for code investigation - DO NOT use Read()!
+        List all functions, classes, and symbols with line numbers using tree-sitter parsing.
         
-        List all functions, classes, and symbols with line numbers.
-        
-        DON'T read entire files to understand code structure - use this instead.
+        Efficiently extracts code structure without reading entire files. Provides detailed
+        symbol information including types, parameters, and hierarchical relationships.
+        Recommended for code discovery and understanding file organization.
         
         Args:
             path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
             git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.) - not supported for URLs
-            
-        Examples:
-            get_symbols_tool("/path/to/file.py")  # Local file
-            get_symbols_tool("https://raw.githubusercontent.com/user/repo/main/file.py")  # GitHub raw URL
-            get_symbols_tool("/path/to/file.py", "HEAD~1")  # Git revision
+            depth: Symbol extraction depth (0=everything, 1=top-level only, 2=classes+methods, etc.)
         """
-        return get_symbols(path_or_url, git_revision)
+        return get_symbols(path_or_url, git_revision, depth)
     
     @mcp.tool()
     def get_function_tool(path_or_url: str, function_name: str, git_revision: Optional[str] = None) -> dict:
         """
-        Extract function definition - USE THIS INSTEAD OF Read() for specific functions!
+        Extract complete function definitions with precise tree-sitter parsing.
         
-        DON'T use Read() + grep/search. Use this for precise extraction with tree-sitter.
-        
-        If you're looking for a specific function, this is better than searching.
+        Retrieves function code, parameters, and location information more accurately
+        than text-based searching or file reading approaches.
         
         Args:
             path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
             function_name: Name of the function to extract
             git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.) - not supported for URLs
-            
-        Examples:
-            get_function_tool("/path/to/file.py", "my_function")  # Local file
-            get_function_tool("https://raw.githubusercontent.com/user/repo/main/file.py", "my_function")  # GitHub raw URL
         """
         return find_function(None)(path_or_url, function_name, git_revision)
     
     @mcp.tool()
     def get_class_tool(path_or_url: str, class_name: str, git_revision: Optional[str] = None) -> dict:
         """
-        Extract class definition - USE THIS INSTEAD OF Read() for specific classes!
+        Extract complete class definitions with precise tree-sitter parsing.
         
-        DON'T use Read() + grep/search. Use this for precise extraction with tree-sitter.
-        
-        If you're looking for a specific class, this is better than searching.
+        Retrieves class code, methods, and structural information more accurately
+        than text-based searching or file reading approaches.
         
         Args:
             path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
             class_name: Name of the class to extract
             git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.) - not supported for URLs
-            
-        Examples:
-            get_class_tool("/path/to/file.py", "MyClass")  # Local file
-            get_class_tool("https://raw.githubusercontent.com/user/repo/main/file.py", "MyClass")  # GitHub raw URL
         """
         return find_class(None)(path_or_url, class_name, git_revision)
     
     @mcp.tool()
     def get_lines_tool(path_or_url: str, start_line: int, end_line: int, git_revision: Optional[str] = None) -> dict:
         """
-        Get specific lines from a file using precise line range control.
+        Extract specific line ranges from files with precise control.
         
-        Use when you know exact line numbers - better than reading entire files.
+        Efficiently retrieves targeted code sections when exact line numbers are known,
+        avoiding the need to process entire files.
         
         Args:
             path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
             start_line: Starting line number (1-based)
             end_line: Ending line number (1-based, inclusive)
             git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.) - not supported for URLs
-            
-        Examples:
-            get_lines_tool("/path/to/file.py", 10, 20)  # Local file lines 10-20
-            get_lines_tool("https://raw.githubusercontent.com/user/repo/main/file.py", 1, 50)  # GitHub raw URL
         """
         return get_lines(path_or_url, start_line, end_line, git_revision)
     
     @mcp.tool()
     def get_signature_tool(path_or_url: str, function_name: str, git_revision: Optional[str] = None) -> dict:
         """
-        Get just the signature/declaration of a function without full implementation.
+        Extract function signatures and declarations without full implementations.
         
-        Use for function interfaces, parameters, return types. Lighter than get_function.
+        Provides function interfaces, parameters, and return types efficiently.
+        Lighter alternative when full function body is not needed.
         
         Args:
             path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
             function_name: Name of the function to get signature for
             git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.) - not supported for URLs
-            
-        Examples:
-            get_signature_tool("/path/to/file.py", "my_function")  # Local file
-            get_signature_tool("https://raw.githubusercontent.com/user/repo/main/file.py", "my_function")  # GitHub raw URL
         """
         return get_signature(path_or_url, function_name, git_revision)
     
