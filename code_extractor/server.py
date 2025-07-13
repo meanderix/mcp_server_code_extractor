@@ -447,7 +447,7 @@ def main():
     parser.add_argument(
         "--version", 
         action="version", 
-        version="mcp-server-code-extractor 0.2.3"
+        version="mcp-server-code-extractor 0.2.5"
     )
     
     # Parse args but ignore them for MCP server mode
