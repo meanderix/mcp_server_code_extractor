@@ -55,6 +55,7 @@ uv run mypy .
 ## Version Management
 
 - To bump the version use uv version --bump <patch|minor|major> commit (only the changes to pyproject.toml) push, and monitor the workflow run to verify it actually gets deployed.
+- **IMPORTANT**: The deployment workflow is triggered by git tags, not pushes. After pushing version changes, create and push a tag: `git tag v<version> && git push origin v<version>`
 
 ## Architecture Overview
 
@@ -118,74 +119,3 @@ New languages require:
 
 The system automatically detects language from file extensions and falls back gracefully for unsupported languages.
 
-## MCP Tools Interface
-
-The server exposes 5 tools to AI assistants:
-
-1. **`get_symbols`** - Primary entry point for code discovery (uses modern core library)
-2. **`get_function`** - Extract specific functions (legacy tree traversal)  
-3. **`get_class`** - Extract specific classes (legacy tree traversal)
-4. **`get_lines`** - Extract line ranges by number
-5. **`get_signature`** - Get function signatures only
-
-**Best Practice**: Always use `get_symbols` first for code exploration, then use specific extraction tools for detailed analysis.
-
-### URL Support
-
-All 5 MCP tools support URLs for fetching remote code:
-
-**Examples:**
-```python
-# GitHub raw URLs
-get_symbols("https://raw.githubusercontent.com/user/repo/main/src/main.py")
-get_function("https://raw.githubusercontent.com/user/repo/main/src/api.py", "handle_request")
-
-# GitLab raw URLs  
-get_class("https://gitlab.com/user/project/-/raw/main/src/models.py", "User")
-get_lines("https://gitlab.com/user/project/-/raw/main/config.py", 10, 20)
-
-# Direct file URLs
-get_signature("https://example.com/code/utils.py", "helper_function")
-```
-
-**Features:**
-- Automatic content-type validation (text/* only)
-- File size limits (1MB default, configurable)
-- TTL caching for performance (5min default)
-- Robust error handling for network issues
-- Support for GitHub, GitLab, and direct file URLs
-
-### Git Revision Support
-
-All 5 MCP tools also support an optional `git_revision` parameter for extracting code from any git revision:
-
-**Examples:**
-```python
-# Extract from filesystem (default, backward compatible)
-get_symbols("src/main.py")
-get_function("src/main.py", "process_data")
-
-# Extract from git revisions (NOT compatible with URLs)
-get_symbols("src/main.py", "HEAD~1")           # Previous commit
-get_function("src/main.py", "process_data", "feature-branch")  # Branch
-get_class("src/models.py", "User", "v1.0.0")   # Tagged version
-get_lines("src/config.py", 10, 20, "abc123")   # Specific commit hash
-
-# Works with all git revision formats
-get_signature("src/api.py", "handle_request", "HEAD^2")  # Merge parent
-```
-
-**Supported Revision Formats:**
-- Commit hashes: `"abc123def"`, `"abc123def456789..."`
-- Branch names: `"main"`, `"feature-branch"`, `"develop"`
-- Tags: `"v1.0.0"`, `"release-2023-12"`
-- Relative refs: `"HEAD~1"`, `"HEAD^"`, `"HEAD~3"`
-- Any valid git revision that `git show` accepts
-
-**Requirements:**
-- File must be in a git repository
-- Git command must be available in PATH
-- Revision must exist in the repository
-- File must exist at the specified revision
-- **Note**: `git_revision` parameter is NOT supported when using URLs
-```
