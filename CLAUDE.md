@@ -17,6 +17,9 @@ uv run pytest tests/test_git_support.py
 
 # Quick functional test of core MCP server
 python test_new_mcp.py
+
+# Test semantic search functionality
+python test_semantic_search.py
 ```
 
 **Running the MCP Server:**
@@ -29,6 +32,11 @@ uv run python -m code_extractor
 
 # Test with MCP Inspector
 npx @modelcontextprotocol/inspector uv run mcp-server-code-extractor
+
+# Example search_code_tool usage in MCP Inspector:
+# search_type: "function-calls"
+# target: "get_file_content" 
+# scope: "code_extractor/server.py"
 
 # For uvx usage (after publishing)
 uvx mcp-server-code-extractor

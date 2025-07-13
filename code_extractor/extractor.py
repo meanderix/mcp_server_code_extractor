@@ -60,12 +60,13 @@ class CodeExtractor:
         except Exception:
             return None
     
-    def extract_symbols(self, source_code: str) -> List[CodeSymbol]:
+    def extract_symbols(self, source_code: str, depth: int = 0) -> List[CodeSymbol]:
         """
         Extract all symbols from source code with full context.
         
         Args:
             source_code: Source code string
+            depth: Symbol extraction depth (0=everything, 1=top-level only, 2=classes+methods, etc.)
             
         Returns:
             List of CodeSymbol objects with rich context
@@ -82,7 +83,7 @@ class CodeExtractor:
             symbols_data = self._process_captures(captures, source_bytes)
             
             # Build hierarchical relationships
-            symbols = self._build_symbol_hierarchy(symbols_data, source_bytes)
+            symbols = self._build_symbol_hierarchy(symbols_data, source_bytes, depth=depth)
             
             return symbols
             
@@ -206,13 +207,14 @@ class CodeExtractor:
         
         return symbols_data
     
-    def _build_symbol_hierarchy(self, symbols_data: Dict[int, Dict[str, Any]], source_bytes: bytes) -> List[CodeSymbol]:
+    def _build_symbol_hierarchy(self, symbols_data: Dict[int, Dict[str, Any]], source_bytes: bytes, depth: int = 1) -> List[CodeSymbol]:
         """
         Build CodeSymbol objects with hierarchical relationships.
         
         Args:
             symbols_data: Processed symbol data
             source_bytes: Source code as bytes
+            depth: Symbol extraction depth (0=everything, 1=top-level only, 2=classes+methods, etc.)
             
         Returns:
             List of CodeSymbol objects
@@ -268,6 +270,10 @@ class CodeExtractor:
         
         # Add parent relationships for methods
         self._add_parent_relationships(symbols)
+        
+        # Apply depth filtering if depth > 0
+        if depth > 0:
+            symbols = self._filter_by_depth(symbols, depth)
         
         return symbols
     
@@ -414,6 +420,56 @@ class CodeExtractor:
             # Push classes onto stack
             if symbol.kind == SymbolKind.CLASS:
                 class_stack.append(symbol)
+    
+    def _filter_by_depth(self, symbols: List[CodeSymbol], depth: int) -> List[CodeSymbol]:
+        """Filter symbols by nesting depth.
+        
+        Args:
+            symbols: List of all symbols
+            depth: Maximum depth to include (1=top-level only, 2=classes+methods, etc.)
+            
+        Returns:
+            Filtered list of symbols
+        """
+        if depth == 0:
+            return symbols
+            
+        # Calculate nesting depth for each symbol
+        # Sort by start position to enable proper nesting detection
+        sorted_symbols = sorted(symbols, key=lambda s: s.start_byte)
+        
+        filtered_symbols = []
+        
+        for symbol in sorted_symbols:
+            symbol_depth = self._calculate_symbol_depth(symbol, sorted_symbols)
+            
+            if symbol_depth <= depth:
+                filtered_symbols.append(symbol)
+        
+        return filtered_symbols
+    
+    def _calculate_symbol_depth(self, symbol: CodeSymbol, sorted_symbols: List[CodeSymbol]) -> int:
+        """Calculate the nesting depth of a symbol.
+        
+        Args:
+            symbol: Symbol to calculate depth for
+            sorted_symbols: All symbols sorted by start position
+            
+        Returns:
+            Nesting depth (1=top-level, 2=inside class, etc.)
+        """
+        depth = 1  # Start at depth 1 for top-level symbols
+        
+        # Count how many class symbols contain this symbol
+        # Only classes count as depth-increasing containers for this use case
+        for other in sorted_symbols:
+            if (other != symbol and 
+                other.start_byte <= symbol.start_byte and 
+                other.end_byte >= symbol.end_byte and
+                other.kind == SymbolKind.CLASS):
+                depth += 1
+        
+        return depth
 
 
 def create_extractor(file_path: str) -> CodeExtractor:

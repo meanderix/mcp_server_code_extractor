@@ -26,6 +26,8 @@ except ImportError:
 from .extractor import create_extractor
 from .languages import get_language_for_file
 from .file_reader import get_file_content
+from .search_engine import SearchEngine
+from .models import SearchParameters
 
 
 # Language mapping for file extensions
@@ -532,6 +534,59 @@ def main():
             git_revision: Optional git revision (commit, branch, tag, HEAD~1, etc.) - not supported for URLs
         """
         return get_signature(path_or_url, function_name, git_revision)
+    
+    @mcp.tool()
+    def search_code_tool(
+        search_type: str,
+        target: str, 
+        scope: str,
+        language: Optional[str] = None,
+        git_revision: Optional[str] = None,
+        max_results: int = 100,
+        include_context: bool = True
+    ) -> List[Dict[str, Any]]:
+        """
+        Search for semantic code patterns using tree-sitter parsing.
+        
+        Finds complex code patterns based on structure, not just text matching.
+        Currently supports 'function-calls' search type.
+        
+        Args:
+            search_type: Type of search ("function-calls") 
+            target: What to search for (e.g., "requests.get", "logger.error")
+            scope: File path, directory path, or URL to search in
+            language: Programming language (auto-detected if not specified)
+            git_revision: Optional git revision (commit, branch, tag) - not supported for URLs
+            max_results: Maximum number of results to return
+            include_context: Include surrounding code lines for context
+        """
+        try:
+            # Validate search type
+            supported_types = ["function-calls"]
+            if search_type not in supported_types:
+                return [{"error": f"Unsupported search type '{search_type}'. Supported: {supported_types}"}]
+            
+            params = SearchParameters(
+                search_type=search_type,
+                target=target,
+                scope=scope,
+                language=language,
+                git_revision=git_revision,
+                max_results=max_results,
+                include_context=include_context
+            )
+            
+            search_engine = SearchEngine()
+            
+            # For Phase 1, only support single file search
+            if os.path.isfile(scope):
+                results = search_engine.search_file(scope, params)
+                return [result.to_dict() for result in results]
+            else:
+                return [{"error": f"Directory search not yet implemented. Please specify a single file."}]
+                
+        except Exception as e:
+            return [{"error": f"Search failed: {str(e)}"}]
     
     # Run the server
     mcp.run()

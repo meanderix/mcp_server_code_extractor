@@ -148,3 +148,42 @@ class CodeSymbol:
             preview = self.name
             
         return preview[:80]  # Truncate for display
+
+
+@dataclass
+class SearchResult:
+    """Represents a search result with context information."""
+    file_path: str
+    start_line: int
+    end_line: int
+    match_text: str
+    context_before: List[str] = field(default_factory=list)
+    context_after: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    language: str = ""
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for MCP compatibility."""
+        return {
+            "file_path": self.file_path,
+            "start_line": self.start_line, 
+            "end_line": self.end_line,
+            "match_text": self.match_text,
+            "context_before": self.context_before,
+            "context_after": self.context_after,
+            "metadata": self.metadata,
+            "language": self.language
+        }
+
+
+@dataclass  
+class SearchParameters:
+    """Parameters for semantic code search operations."""
+    search_type: str
+    target: str
+    scope: str
+    language: Optional[str] = None
+    git_revision: Optional[str] = None
+    max_results: int = 100
+    include_context: bool = True
+    context_lines: int = 3
