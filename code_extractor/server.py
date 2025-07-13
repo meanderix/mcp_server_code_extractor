@@ -543,12 +543,17 @@ def main():
         language: Optional[str] = None,
         git_revision: Optional[str] = None,
         max_results: int = 100,
-        include_context: bool = True
+        include_context: bool = True,
+        file_patterns: Optional[List[str]] = None,
+        exclude_patterns: Optional[List[str]] = None,
+        max_files: int = 1000,
+        follow_symlinks: bool = False
     ) -> List[Dict[str, Any]]:
         """
         Search for semantic code patterns using tree-sitter parsing.
         
         Finds complex code patterns based on structure, not just text matching.
+        Automatically detects whether scope is a file or directory and searches accordingly.
         Currently supports 'function-calls' search type.
         
         Args:
@@ -559,6 +564,10 @@ def main():
             git_revision: Optional git revision (commit, branch, tag) - not supported for URLs
             max_results: Maximum number of results to return
             include_context: Include surrounding code lines for context
+            file_patterns: File patterns to include in directory search (e.g., ["*.py", "*.js"])
+            exclude_patterns: File patterns to exclude (e.g., ["*.pyc", "node_modules/*"])
+            max_files: Maximum number of files to search in directory mode
+            follow_symlinks: Whether to follow symbolic links in directory search
         """
         try:
             # Validate search type
@@ -566,6 +575,7 @@ def main():
             if search_type not in supported_types:
                 return [{"error": f"Unsupported search type '{search_type}'. Supported: {supported_types}"}]
             
+            # Set up search parameters with defaults for directory-specific options
             params = SearchParameters(
                 search_type=search_type,
                 target=target,
@@ -573,17 +583,32 @@ def main():
                 language=language,
                 git_revision=git_revision,
                 max_results=max_results,
-                include_context=include_context
+                include_context=include_context,
+                file_patterns=file_patterns or ["*"],
+                exclude_patterns=exclude_patterns or ["*.pyc", "*.pyo", "*.pyd", "__pycache__/*", ".git/*", ".svn/*", "node_modules/*", "*.min.js"],
+                max_files=max_files,
+                follow_symlinks=follow_symlinks
             )
             
             search_engine = SearchEngine()
             
-            # For Phase 1, only support single file search
+            # Auto-detect file vs directory scope and route accordingly
             if os.path.isfile(scope):
+                # Single file search
                 results = search_engine.search_file(scope, params)
                 return [result.to_dict() for result in results]
+            elif os.path.isdir(scope):
+                # Directory search
+                results = search_engine.search_directory(scope, params)
+                return [result.to_dict() for result in results]
             else:
-                return [{"error": f"Directory search not yet implemented. Please specify a single file."}]
+                # Check if it's a URL
+                if scope.startswith(('http://', 'https://')):
+                    # Single file search for URLs
+                    results = search_engine.search_file(scope, params)
+                    return [result.to_dict() for result in results]
+                else:
+                    return [{"error": f"Scope '{scope}' is not a valid file, directory, or URL"}]
                 
         except Exception as e:
             return [{"error": f"Search failed: {str(e)}"}]

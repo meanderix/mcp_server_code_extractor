@@ -5,9 +5,10 @@ Provides sophisticated pattern matching beyond simple text search,
 leveraging syntax tree structure for accurate code understanding.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Set, Tuple
 from pathlib import Path
 import os
+import fnmatch
 from tree_sitter import Node, Query
 from tree_sitter_languages import get_parser, get_language
 
@@ -53,6 +54,44 @@ class SearchEngine:
         except Exception as e:
             # Log error but don't crash
             print(f"Error searching {file_path}: {e}")
+            return []
+    
+    def search_directory(self, directory_path: str, params: SearchParameters) -> List[SearchResult]:
+        """Search all matching files in a directory tree."""
+        try:
+            dir_path = Path(directory_path)
+            if not dir_path.exists() or not dir_path.is_dir():
+                print(f"Directory not found or not a directory: {directory_path}")
+                return []
+            
+            # Get all matching files
+            matching_files = self._find_matching_files(dir_path, params)
+            
+            if len(matching_files) > params.max_files:
+                print(f"Found {len(matching_files)} files, limiting to {params.max_files}")
+                matching_files = matching_files[:params.max_files]
+            
+            # Search each file and aggregate results
+            all_results = []
+            for file_path in matching_files:
+                try:
+                    file_results = self.search_file(str(file_path), params)
+                    all_results.extend(file_results)
+                    
+                    # Check if we've hit the max results limit
+                    if len(all_results) >= params.max_results:
+                        all_results = all_results[:params.max_results]
+                        break
+                        
+                except Exception as e:
+                    print(f"Error searching file {file_path}: {e}")
+                    continue
+            
+            # Deduplicate and sort results
+            return self._deduplicate_results(all_results)
+            
+        except Exception as e:
+            print(f"Error searching directory {directory_path}: {e}")
             return []
     
     def _search_function_calls(self, file_path: str, source_code: str, tree: Any, 
@@ -145,3 +184,69 @@ class SearchEngine:
             language_obj = get_language(language)
             self._query_cache[cache_key] = language_obj.query(pattern)
         return self._query_cache[cache_key]
+    
+    def _find_matching_files(self, dir_path: Path, params: SearchParameters) -> List[Path]:
+        """Find all files in directory that match the search criteria."""
+        matching_files = []
+        
+        try:
+            # Use rglob to recursively find files
+            if params.follow_symlinks:
+                all_files = [f for f in dir_path.rglob("*") if f.is_file()]
+            else:
+                all_files = [f for f in dir_path.rglob("*") if f.is_file() and not f.is_symlink()]
+            
+            for file_path in all_files:
+                # Check if file matches include patterns
+                if not self._matches_patterns(file_path.name, params.file_patterns):
+                    continue
+                
+                # Check if file matches exclude patterns
+                if self._matches_patterns(str(file_path.relative_to(dir_path)), params.exclude_patterns):
+                    continue
+                
+                # Skip binary files
+                if self._is_binary_file(file_path):
+                    continue
+                
+                matching_files.append(file_path)
+                
+        except PermissionError as e:
+            print(f"Permission denied accessing {dir_path}: {e}")
+        except Exception as e:
+            print(f"Error finding files in {dir_path}: {e}")
+        
+        return matching_files
+    
+    def _matches_patterns(self, file_path: str, patterns: List[str]) -> bool:
+        """Check if file path matches any of the given patterns."""
+        for pattern in patterns:
+            if fnmatch.fnmatch(file_path, pattern):
+                return True
+        return False
+    
+    def _is_binary_file(self, file_path: Path) -> bool:
+        """Check if file is binary by reading a small sample."""
+        try:
+            with open(file_path, 'rb') as f:
+                chunk = f.read(1024)
+                return b'\0' in chunk
+        except Exception:
+            return True  # If we can't read it, treat as binary
+    
+    def _deduplicate_results(self, results: List[SearchResult]) -> List[SearchResult]:
+        """Remove duplicate results and sort by relevance."""
+        seen: Set[Tuple[str, int, str]] = set()
+        unique_results = []
+        
+        for result in results:
+            # Create a unique key based on file, line, and match text
+            key = (result.file_path, result.start_line, result.match_text.strip())
+            if key not in seen:
+                seen.add(key)
+                unique_results.append(result)
+        
+        # Sort by file path, then by line number
+        unique_results.sort(key=lambda r: (r.file_path, r.start_line))
+        
+        return unique_results

@@ -187,3 +187,9 @@ class SearchParameters:
     max_results: int = 100
     include_context: bool = True
     context_lines: int = 3
+    
+    # Directory search specific options
+    file_patterns: List[str] = field(default_factory=lambda: ["*"])
+    exclude_patterns: List[str] = field(default_factory=lambda: ["*.pyc", "*.pyo", "*.pyd", "__pycache__/*", ".git/*", ".svn/*", "node_modules/*", "*.min.js"])
+    max_files: int = 1000
+    follow_symlinks: bool = False
