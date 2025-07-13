@@ -45,9 +45,11 @@ class SearchEngine:
             parser = get_parser(lang_name)
             tree = parser.parse(source_code.encode('utf-8'))
             
-            # For Phase 1, we'll hardcode the function-calls pattern
+            # Route to appropriate search method
             if params.search_type == "function-calls":
                 return self._search_function_calls(file_path, source_code, tree, params, lang_name)
+            elif params.search_type == "symbol-definitions":
+                return self._search_symbol_definitions(file_path, source_code, tree, params, lang_name)
             
             return []
             
@@ -180,6 +182,144 @@ class SearchEngine:
                         context_before=context_before,
                         context_after=context_after,
                         metadata={"search_type": params.search_type, "target": params.target},
+                        language=lang_name
+                    )
+                    results.append(result)
+                    
+                    if len(results) >= params.max_results:
+                        break
+        
+        return results
+    
+    def _search_symbol_definitions(self, file_path: str, source_code: str, tree: Any, 
+                                 params: SearchParameters, lang_name: str) -> List[SearchResult]:
+        """Search for symbol definitions (classes, functions, variables) in the parsed tree."""
+        results = []
+        
+        # Define query patterns for different languages
+        patterns = {
+            'python': '''
+                ; Function definitions
+                (function_definition
+                  name: (identifier) @function_name
+                ) @function_def
+                
+                ; Class definitions
+                (class_definition
+                  name: (identifier) @class_name
+                ) @class_def
+                
+                ; Variable assignments
+                (assignment
+                  left: (identifier) @variable_name
+                ) @variable_def
+            ''',
+            'javascript': '''
+                ; Function declarations
+                (function_declaration
+                  name: (identifier) @function_name
+                ) @function_def
+                
+                ; Class declarations
+                (class_declaration
+                  name: (identifier) @class_name
+                ) @class_def
+                
+                ; Variable declarations
+                (variable_declaration
+                  (variable_declarator
+                    name: (identifier) @variable_name
+                  )
+                ) @variable_def
+                
+                ; Const declarations
+                (lexical_declaration
+                  (variable_declarator
+                    name: (identifier) @variable_name
+                  )
+                ) @const_def
+            ''',
+            'typescript': '''
+                ; Function declarations
+                (function_declaration
+                  name: (identifier) @function_name
+                ) @function_def
+                
+                ; Class declarations
+                (class_declaration
+                  name: (identifier) @class_name
+                ) @class_def
+                
+                ; Interface declarations
+                (interface_declaration
+                  name: (type_identifier) @interface_name
+                ) @interface_def
+                
+                ; Type alias declarations
+                (type_alias_declaration
+                  name: (type_identifier) @type_name
+                ) @type_def
+                
+                ; Variable declarations
+                (variable_declaration
+                  (variable_declarator
+                    name: (identifier) @variable_name
+                  )
+                ) @variable_def
+                
+                ; Const declarations
+                (lexical_declaration
+                  (variable_declarator
+                    name: (identifier) @variable_name
+                  )
+                ) @const_def
+            '''
+        }
+        
+        pattern = patterns.get(lang_name)
+        if not pattern:
+            return []
+        
+        # Compile and execute query
+        query = self._get_compiled_query(lang_name, pattern)
+        captures = query.captures(tree.root_node)
+        
+        source_lines = source_code.splitlines()
+        
+        for node, capture_name in captures:
+            if capture_name.endswith('_def'):
+                # Check if this symbol name matches our target
+                symbol_text = source_code[node.start_byte:node.end_byte]
+                
+                # For symbol definitions, we want to check if the target appears in the symbol
+                if params.target in symbol_text:
+                    start_line = node.start_point[0] + 1
+                    end_line = node.end_point[0] + 1
+                    
+                    # Get context lines
+                    context_before = []
+                    context_after = []
+                    if params.include_context:
+                        start_ctx = max(0, start_line - 1 - params.context_lines)
+                        end_ctx = min(len(source_lines), end_line + params.context_lines)
+                        context_before = source_lines[start_ctx:start_line-1]
+                        context_after = source_lines[end_line:end_ctx]
+                    
+                    # Determine symbol type from capture name
+                    symbol_type = capture_name.replace('_def', '').replace('_name', '')
+                    
+                    result = SearchResult(
+                        file_path=file_path,
+                        start_line=start_line,
+                        end_line=end_line,
+                        match_text=symbol_text,
+                        context_before=context_before,
+                        context_after=context_after,
+                        metadata={
+                            "search_type": params.search_type, 
+                            "target": params.target,
+                            "symbol_type": symbol_type
+                        },
                         language=lang_name
                     )
                     results.append(result)

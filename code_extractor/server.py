@@ -554,11 +554,23 @@ def main():
         
         Finds complex code patterns based on structure, not just text matching.
         Automatically detects whether scope is a file or directory and searches accordingly.
-        Currently supports 'function-calls' search type.
+        Supports 'function-calls' and 'symbol-definitions' search types.
+        
+        Search Types:
+        - "function-calls": Find where functions/methods are called or invoked
+        - "symbol-definitions": Find where symbols (functions, classes, variables) are defined
+        
+        Examples:
+        - Find function calls: search_type="function-calls", target="requests.get"
+        - Find function definitions: search_type="symbol-definitions", target="process_data"
+        - Find class definitions: search_type="symbol-definitions", target="UserService"
+        - Find variable definitions: search_type="symbol-definitions", target="API_KEY"
+        
+        Supported Languages: Python, JavaScript, TypeScript (with fallback for others)
         
         Args:
-            search_type: Type of search ("function-calls") 
-            target: What to search for (e.g., "requests.get", "logger.error")
+            search_type: Type of search ("function-calls", "symbol-definitions") 
+            target: What to search for (symbol name or call pattern)
             scope: File path, directory path, or URL to search in
             language: Programming language (auto-detected if not specified)
             git_revision: Optional git revision (commit, branch, tag) - not supported for URLs
@@ -568,10 +580,14 @@ def main():
             exclude_patterns: File patterns to exclude (e.g., ["*.pyc", "node_modules/*"])
             max_files: Maximum number of files to search in directory mode
             follow_symlinks: Whether to follow symbolic links in directory search
+            
+        Returns:
+            List of search results with file paths, line numbers, matched text, context,
+            and metadata including symbol_type for definitions.
         """
         try:
             # Validate search type
-            supported_types = ["function-calls"]
+            supported_types = ["function-calls", "symbol-definitions"]
             if search_type not in supported_types:
                 return [{"error": f"Unsupported search type '{search_type}'. Supported: {supported_types}"}]
             
