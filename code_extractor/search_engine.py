@@ -116,20 +116,32 @@ class SearchEngine:
                 ) @simple_call
             ''',
             'javascript': '''
+                ; Method calls like obj.method()
                 (call_expression
                   function: (member_expression
                     object: (identifier) @module  
                     property: (property_identifier) @function
                   )
                 ) @call
+                
+                ; Simple function calls like func()
+                (call_expression
+                  function: (identifier) @simple_function
+                ) @simple_call
             ''',
             'typescript': '''
+                ; Method calls like obj.method()
                 (call_expression
                   function: (member_expression
                     object: (identifier) @module  
                     property: (property_identifier) @function
                   )
                 ) @call
+                
+                ; Simple function calls like func()
+                (call_expression
+                  function: (identifier) @simple_function
+                ) @simple_call
             '''
         }
         

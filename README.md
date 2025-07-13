@@ -15,9 +15,10 @@ MCP Server Code Extractor solves these problems by providing structured, tree-si
 ## Features
 
 - **🎯 Precise Extraction**: Uses tree-sitter parsing for accurate code boundary detection
+- **🔍 Semantic Search**: Search for function calls and code patterns across files and directories
 - **🌍 30+ Languages**: Supports Python, JavaScript, TypeScript, Go, Rust, Java, C/C++, and many more
 - **📍 Line Numbers**: Every extraction includes precise line number information
-- **🔍 Code Discovery**: List all functions and classes in a file before extracting
+- **🗂️ Directory Search**: Search entire codebases with file pattern filtering and exclusions
 - **📊 Depth Control**: Extract at different levels (top-level only, classes+methods, everything)
 - **🌐 URL Support**: Fetch and extract code from GitHub, GitLab, and direct file URLs
 - **🔄 Git Integration**: Extract code from any git revision, branch, or tag
@@ -132,7 +133,33 @@ Returns:
 - parent: Parent class name (for methods)
 ```
 
-### 2. `get_function` - Extract Complete Functions
+### 2. `search_code` - Semantic Code Search
+Search for code patterns using tree-sitter parsing. Supports both single-file and directory-wide searches.
+
+```
+Parameters:
+- search_type: Type of search ("function-calls")
+- target: What to search for (e.g., "requests.get", "logger.error", "validateData")
+- scope: File path, directory path, or URL to search in
+- language: Programming language (auto-detected if not specified)
+- git_revision: Optional git revision (commit, branch, tag) - not supported for URLs
+- max_results: Maximum number of results to return (default: 100)
+- include_context: Include surrounding code lines for context (default: true)
+- file_patterns: File patterns for directory search (e.g., ["*.py", "*.js"])
+- exclude_patterns: File patterns to exclude (e.g., ["*.pyc", "node_modules/*"])
+- max_files: Maximum number of files to search in directory mode (default: 1000)
+- follow_symlinks: Whether to follow symbolic links in directory search (default: false)
+
+Returns:
+- file_path: Path to file containing the match
+- start_line/end_line: Line numbers of the match
+- match_text: The matching code
+- context_before/context_after: Surrounding code lines
+- language: Detected programming language
+- metadata: Additional search information
+```
+
+### 3. `get_function` - Extract Complete Functions
 Extract a complete function with all its code.
 
 ```
@@ -147,7 +174,7 @@ Returns:
 - language: Detected language
 ```
 
-### 3. `get_class` - Extract Complete Classes
+### 4. `get_class` - Extract Complete Classes
 Extract an entire class definition including all methods.
 
 ```
@@ -162,7 +189,7 @@ Returns:
 - language: Detected language
 ```
 
-### 4. `get_lines` - Extract Specific Line Ranges
+### 5. `get_lines` - Extract Specific Line Ranges
 Get exact line ranges when you know the line numbers.
 
 ```
@@ -177,7 +204,7 @@ Returns:
 - line numbers and metadata
 ```
 
-### 5. `get_signature` - Get Function Signatures
+### 6. `get_signature` - Get Function Signatures
 Quickly get just the function signature without the body.
 
 ```
@@ -251,7 +278,39 @@ lines = get_lines("models/user.py", 10, 25)
 # Returns: Lines 10-25 of the file
 ```
 
-### Example 4: Multi-Language Support
+### Example 4: Semantic Code Search
+
+```python
+# Search for specific function calls in a single file
+results = search_code(
+    search_type="function-calls",
+    target="requests.get",
+    scope="src/api.py"
+)
+# Returns: All requests.get() calls with line numbers and context
+
+# Search across an entire directory
+results = search_code(
+    search_type="function-calls", 
+    target="logger.error",
+    scope="src/",
+    file_patterns=["*.py"],
+    exclude_patterns=["test_*", "__pycache__/*"]
+)
+# Returns: All logger.error() calls across Python files, excluding tests
+
+# Cross-language search in frontend code
+results = search_code(
+    search_type="function-calls",
+    target="fetchData", 
+    scope="frontend/",
+    file_patterns=["*.js", "*.ts", "*.jsx"],
+    max_results=50
+)
+# Returns: All fetchData() calls in JavaScript/TypeScript files
+```
+
+### Example 5: Multi-Language Support
 
 ```javascript
 // Works with JavaScript/TypeScript
@@ -277,11 +336,19 @@ method = get_function("main.go", "ServeHTTP")
 ## Best Practices
 
 ### Progressive Discovery Workflow
-1. **Start with `get_symbols`** using `depth=1` to see file structure
-2. **Use depth control** - `depth=2` for classes+methods, `depth=0` for everything
-3. **Extract specific items** with `get_function/get_class` for implementation details
-4. **Use `get_signature`** for quick API exploration without full code
-5. **Use `get_lines`** when you know exact line numbers
+1. **Start with `search_code`** to find relevant functions and patterns across the codebase
+2. **Use `get_symbols`** with `depth=1` to see file structure of interesting files
+3. **Use depth control** - `depth=2` for classes+methods, `depth=0` for everything
+4. **Extract specific items** with `get_function/get_class` for implementation details
+5. **Use `get_signature`** for quick API exploration without full code
+6. **Use `get_lines`** when you know exact line numbers
+
+### Semantic Search Tips
+- Use **directory search** to find patterns across your entire codebase
+- Apply **file patterns** to focus on specific languages or file types
+- Use **exclusion patterns** to skip test files, build artifacts, and dependencies
+- Set appropriate **max_results** and **max_files** limits for large codebases
+- Enable **context** to understand the surrounding code
 
 ### Git Integration Tips
 - Use git revisions to compare implementations across versions
