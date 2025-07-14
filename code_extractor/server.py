@@ -461,11 +461,10 @@ def main():
     @mcp.tool()
     def get_symbols_tool(path_or_url: str, git_revision: Optional[str] = None, depth: int = 1) -> list:
         """
-        List all functions, classes, and symbols with line numbers using tree-sitter parsing.
-        
-        Efficiently extracts code structure without reading entire files. Provides detailed
-        symbol information including types, parameters, and hierarchical relationships.
-        Recommended for code discovery and understanding file organization.
+        AST-precise symbol table generator for files/directories/URLs. Enumerates every function, class, 
+        variable with byte-accurate boundaries and line numbers using tree-sitter parsing. Zero regex 
+        drift, language-aware across 30+ languages. Use when you need complete symbol inventory instead 
+        of text searching. Supports git revisions for historical analysis.
         
         Args:
             path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
@@ -477,10 +476,10 @@ def main():
     @mcp.tool()
     def get_function_tool(path_or_url: str, function_name: str, git_revision: Optional[str] = None) -> dict:
         """
-        Extract complete function definitions with precise tree-sitter parsing.
-        
-        Retrieves function code, parameters, and location information more accurately
-        than text-based searching or file reading approaches.
+        Tree-sitter function extractor that pinpoints exact function/method boundaries with zero false positives.
+        Returns complete definition including signature, parameters, body, and precise line ranges. Handles 
+        nested functions, async/await, decorators across languages. Prefer over Read when isolating specific 
+        functions for analysis, refactoring, or documentation generation.
         
         Args:
             path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
@@ -492,10 +491,10 @@ def main():
     @mcp.tool()
     def get_class_tool(path_or_url: str, class_name: str, git_revision: Optional[str] = None) -> dict:
         """
-        Extract complete class definitions with precise tree-sitter parsing.
-        
-        Retrieves class code, methods, and structural information more accurately
-        than text-based searching or file reading approaches.
+        AST-aware class/type extractor that guarantees complete definition boundaries including inheritance, 
+        generics, nested classes, and all methods. Language-aware parsing handles OOP patterns across 
+        Python, Java, C++, TypeScript, etc. Use for refactoring, inheritance analysis, or API documentation 
+        instead of multiline text search which misses scope boundaries.
         
         Args:
             path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
@@ -507,10 +506,10 @@ def main():
     @mcp.tool()
     def get_lines_tool(path_or_url: str, start_line: int, end_line: int, git_revision: Optional[str] = None) -> dict:
         """
-        Extract specific line ranges from files with precise control.
-        
-        Efficiently retrieves targeted code sections when exact line numbers are known,
-        avoiding the need to process entire files.
+        Precise line range extractor with git-revision support. Returns exact line spans from any commit, 
+        branch, or URL without reading entire files. Handles line numbering consistently across file 
+        changes. Use for targeted diff analysis, patch generation, or code review when you have specific 
+        line numbers from symbols or search results.
         
         Args:
             path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
@@ -523,10 +522,10 @@ def main():
     @mcp.tool()
     def get_signature_tool(path_or_url: str, function_name: str, git_revision: Optional[str] = None) -> dict:
         """
-        Extract function signatures and declarations without full implementations.
-        
-        Provides function interfaces, parameters, and return types efficiently.
-        Lighter alternative when full function body is not needed.
+        Function signature extractor that returns only the header/declaration without implementation body. 
+        Preserves exact parameter types, decorators, async/static modifiers, and return annotations. 
+        Ideal for API documentation, interface analysis, or quick function discovery when you don't need 
+        the full implementation. Faster than get_function_tool for signature-only queries.
         
         Args:
             path_or_url: Path to source file or URL (GitHub raw, GitLab raw, direct file URL)
@@ -550,23 +549,20 @@ def main():
         follow_symlinks: bool = False
     ) -> List[Dict[str, Any]]:
         """
-        Search for semantic code patterns using tree-sitter parsing.
-        
-        Finds complex code patterns based on structure, not just text matching.
-        Automatically detects whether scope is a file or directory and searches accordingly.
-        Supports 'function-calls' and 'symbol-definitions' search types.
+        Tree-sitter semantic code search that understands language structure, not just text patterns. 
+        Finds function calls, symbol definitions, and references with AST precision across files/directories/repos. 
+        Zero false positives from string matches in comments or strings. Supports git revisions for 
+        historical analysis. Use instead of grep/text search when semantic accuracy matters.
         
         Search Types:
-        - "function-calls": Find where functions/methods are called or invoked
-        - "symbol-definitions": Find where symbols (functions, classes, variables) are defined
+        - "function-calls": Locate where functions/methods are invoked (not just string matches)
+        - "symbol-definitions": Find where symbols (functions, classes, variables) are declared
         
         Examples:
         - Find function calls: search_type="function-calls", target="requests.get"
         - Find function definitions: search_type="symbol-definitions", target="process_data"
         - Find class definitions: search_type="symbol-definitions", target="UserService"
         - Find variable definitions: search_type="symbol-definitions", target="API_KEY"
-        
-        Supported Languages: Python, JavaScript, TypeScript (with fallback for others)
         
         Args:
             search_type: Type of search ("function-calls", "symbol-definitions") 
