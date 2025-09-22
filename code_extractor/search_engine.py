@@ -10,7 +10,7 @@ from pathlib import Path
 import os
 import fnmatch
 from tree_sitter import Node, Query
-from tree_sitter_languages import get_parser, get_language
+from tree_sitter_language_pack import get_parser, get_language
 
 from .models import SearchResult, SearchParameters
 from .file_reader import get_file_content
