@@ -5,7 +5,7 @@ Language detection and parser management for tree-sitter.
 import os
 from typing import Dict, Optional
 from tree_sitter import Language, Parser
-from tree_sitter_languages import get_language, get_parser
+from tree_sitter_language_pack import get_language, get_parser
 
 
 # Supported languages mapping
