@@ -17,7 +17,7 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from tree_sitter_languages import get_parser
+    from tree_sitter_language_pack import get_parser
 except ImportError:
     print("Error: tree-sitter-languages not installed. Install with: pip install tree-sitter-languages", file=sys.stderr)
     sys.exit(1)
